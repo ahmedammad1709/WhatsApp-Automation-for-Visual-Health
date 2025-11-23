@@ -1,0 +1,27 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const cityRoutes = require('./routes/cityRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const timeSlotRoutes = require('./routes/timeSlotRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+const { ok } = require('./utils/response');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json(ok({ name: 'whatsapp_project_api' }, 'API running'));
+});
+
+app.use('/cities', cityRoutes);
+app.use('/events', eventRoutes);
+app.use('/time-slots', timeSlotRoutes);
+app.use('/patients', patientRoutes);
+app.use('/appointments', appointmentRoutes);
+
+module.exports = app;
