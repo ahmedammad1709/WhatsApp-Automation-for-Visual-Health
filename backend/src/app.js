@@ -7,6 +7,7 @@ const eventRoutes = require('./routes/eventRoutes');
 const timeSlotRoutes = require('./routes/timeSlotRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
+const whatsappRoutes = require('./routes/whatsappRoutes');
 const { ok } = require('./utils/response');
 
 const app = express();
@@ -23,5 +24,6 @@ app.use('/events', eventRoutes);
 app.use('/time-slots', timeSlotRoutes);
 app.use('/patients', patientRoutes);
 app.use('/appointments', appointmentRoutes);
+app.use('/webhook', whatsappRoutes);
 
 module.exports = app;
