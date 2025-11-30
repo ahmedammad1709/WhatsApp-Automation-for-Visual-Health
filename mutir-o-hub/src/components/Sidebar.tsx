@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 // Shows all available pages and highlights the current page
 
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Cities', path: '/cities', icon: Activity },
   { name: 'Events', path: '/events', icon: Calendar },
   { name: 'Appointments', path: '/appointments', icon: Users },
