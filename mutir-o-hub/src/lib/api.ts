@@ -3,7 +3,7 @@ import axios from 'axios';
 // API base configuration
 // Purpose: Centralized API layer for all backend communications
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

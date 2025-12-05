@@ -10,6 +10,7 @@ async function listByEvent(req, res) {
   } catch (e) {
     res.status(500).json(error('Failed to fetch time slots'));
   }
+
 }
 
 async function create(req, res) {
