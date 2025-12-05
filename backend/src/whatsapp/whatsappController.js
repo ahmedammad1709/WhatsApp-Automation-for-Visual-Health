@@ -14,51 +14,34 @@ function verifyWebhook(req, res) {
 
 async function handleWebhook(req, res) {
   try {
-    const body = req.body || {};
-    const entry = (body.entry && body.entry[0]) || null;
-    const changes = (entry && entry.changes && entry.changes[0]) || null;
-    const value = (changes && changes.value) || null;
-    const messages = (value && value.messages) || [];
-    const statuses = (value && value.statuses) || [];
-    if (statuses && statuses.length > 0) {
-      res.status(200).json(ok(null, 'Status received'));
-      return;
+    const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
+    const message = entry?.messages?.[0];
+    if (!message) return res.sendStatus(200);
+    const from = message.from;
+    const text = message.text?.body || '';
+    await WhatsAppService.logMessage(from, 'in', text);
+    const AIFlow = require('./aiFlowService');
+    const result = await AIFlow.processUserMessage(from, text);
+    console.log("INCOMING:", JSON.stringify(req.body, null, 2));
+    
+    if (!result) return res.sendStatus(200);
+    if (result.type === 'text') {
+      await WhatsAppService.sendText(from, result.text);
+      await WhatsAppService.logMessage(from, 'out', result.text);
     }
-    const msg = messages[0] || null;
-    if (!msg) {
-      res.status(200).json(ok(null, 'No message'));
-      return;
+    if (result.type === 'options') {
+      await WhatsAppService.sendOptions(from, result.title, result.options);
+      await WhatsAppService.logMessage(from, 'out', result.title);
     }
-    const phone = msg.from;
-    let text = '';
-    if (msg.type === 'text' && msg.text && msg.text.body) text = msg.text.body;
-    if (msg.type === 'interactive') {
-      const ir = msg.interactive || {};
-      const lr = ir.list_reply || null;
-      const br = ir.button_reply || null;
-      if (lr && lr.id) text = lr.id;
-      if (br && br.id) text = br.id;
+    if (result.type === 'final') {
+      await WhatsAppService.sendFinalConfirmation(from, result.appt);
+      await WhatsAppService.logMessage(from, 'out', 'Confirmação enviada');
     }
-    await WhatsAppService.logMessage(phone, 'in', text);
-    const reply = await WhatsAppService.handleIncomingMessage(phone, text);
-    if (!reply) {
-      res.status(200).json(ok(null, 'No reply'));
-      return;
-    }
-    if (reply.type === 'text') {
-      await WhatsAppService.sendText(phone, reply.text);
-      await WhatsAppService.logMessage(phone, 'out', reply.text);
-    } else if (reply.type === 'options') {
-      await WhatsAppService.sendOptions(phone, reply.title, reply.options);
-      await WhatsAppService.logMessage(phone, 'out', reply.title);
-    } else if (reply.type === 'final') {
-      await WhatsAppService.sendFinalConfirmation(phone, reply.appointment);
-      await WhatsAppService.logMessage(phone, 'out', 'Confirmação enviada');
-    }
-    res.status(200).json(ok(null, 'Processed'));
+    return res.sendStatus(200);
   } catch (e) {
-    res.status(200).json(ok(null, 'Processed'));
+    return res.sendStatus(200);
   }
+  
 }
 
 module.exports = { verifyWebhook, handleWebhook };

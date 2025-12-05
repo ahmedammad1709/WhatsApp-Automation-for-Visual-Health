@@ -58,4 +58,9 @@ async function getAvailableSlots(eventId) {
   return rows.filter(r => r.reserved_count < r.max_per_slot);
 }
 
-module.exports = { detectCity, getEventForCity, getNearestAvailableEvent, getAvailableSlots };
+async function processUserMessage(from, text) {
+  const S = require('./whatsappService');
+  return S.processUserMessage(from, text);
+}
+
+module.exports = { detectCity, getEventForCity, getNearestAvailableEvent, getAvailableSlots, processUserMessage };

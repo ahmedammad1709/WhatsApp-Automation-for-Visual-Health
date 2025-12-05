@@ -44,6 +44,8 @@ async function getAvailableSlots(eventId) {
 }
 
 async function sendText(phone, text) {
+  console.log("BOT SEND TEXT:", text);
+
   return Sender.sendText(phone, text);
 }
 
@@ -147,4 +149,15 @@ async function handleIncomingMessage(phone, text) {
   return handleStep(phone, text, state);
 }
 
-module.exports = { handleIncomingMessage, handleStep, resetState, detectCity, getEventForCity, getAvailableSlots, savePatient, saveAppointment, logMessage, sendText, sendOptions, sendFinalConfirmation };
+async function processUserMessage(from, text) {
+
+  const result = await handleIncomingMessage(from, text);
+  console.log("BOT RECEIVED TEXT:", text);
+
+  if (result && result.type === 'final') {
+    return { type: 'final', appt: result.appointment };
+  }
+  return result;
+}
+
+module.exports = { handleIncomingMessage, handleStep, resetState, detectCity, getEventForCity, getAvailableSlots, savePatient, saveAppointment, logMessage, sendText, sendOptions, sendFinalConfirmation, processUserMessage };

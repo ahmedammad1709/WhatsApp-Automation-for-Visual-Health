@@ -11,5 +11,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0
 });
+// pool.query('SELECT 1', (err, results) => { console.log(err, results) });
+
 
 module.exports = pool;
