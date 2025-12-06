@@ -14,9 +14,10 @@ function verifyWebhook(req, res) {
 
 async function handleWebhook(req, res) {
   try {
+    console.log('Received webhook:', JSON.stringify(req.body));
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     const message = entry?.messages?.[0];
-    if (!message) return res.sendStatus(200);
+    if (!message) return res.status(200).send('Webhook received');
     const from = message.from;
     const text = message.text?.body || '';
     await WhatsAppService.logMessage(from, 'in', text);
@@ -24,7 +25,7 @@ async function handleWebhook(req, res) {
     const result = await AIFlow.processUserMessage(from, text);
     console.log("INCOMING:", JSON.stringify(req.body, null, 2));
     
-    if (!result) return res.sendStatus(200);
+    if (!result) return res.status(200).send('Webhook received');
     if (result.type === 'text') {
       await WhatsAppService.sendText(from, result.text);
       await WhatsAppService.logMessage(from, 'out', result.text);
@@ -37,9 +38,9 @@ async function handleWebhook(req, res) {
       await WhatsAppService.sendFinalConfirmation(from, result.appt);
       await WhatsAppService.logMessage(from, 'out', 'Confirmação enviada');
     }
-    return res.sendStatus(200);
+    return res.status(200).send('Webhook received');
   } catch (e) {
-    return res.sendStatus(200);
+    return res.status(200).send('Webhook received');
   }
   
 }

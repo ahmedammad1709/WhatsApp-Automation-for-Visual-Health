@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import * as React from 'react';
+const { useEffect, useState } = React;
 import Layout from '@/components/Layout';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
