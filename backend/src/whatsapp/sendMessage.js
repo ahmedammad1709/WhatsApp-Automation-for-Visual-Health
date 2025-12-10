@@ -18,6 +18,9 @@ function postMessage(path, body) {
       res.on('end', () => {
         try {
           const json = JSON.parse(chunks || '{}');
+          if (res.statusCode && res.statusCode >= 400) {
+            console.error('WhatsApp send error:', res.statusCode, json);
+          }
           resolve(json);
         } catch (_) {
           resolve({});

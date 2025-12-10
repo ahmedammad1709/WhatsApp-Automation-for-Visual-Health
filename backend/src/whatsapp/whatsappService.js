@@ -153,7 +153,8 @@ async function handleIncomingMessage(phone, text) {
 async function processUserMessage(from, text) {
   console.log("BOT RECEIVED TEXT:", text);
   const reply = await generateGPTReply(text);
-  return { type: 'text', text: reply };
+  const safe = (reply || '').trim();
+  return { type: 'text', text: safe || 'Desculpe, não consegui responder agora.' };
 }
 
 async function generateGPTReply(prompt) {
