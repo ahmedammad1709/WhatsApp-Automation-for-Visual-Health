@@ -1,3 +1,4 @@
+const https = require('https');
 const pool = require('../config/db');
 const AIFlow = require('./aiFlowService');
 const Sender = require('./sendMessage');
@@ -150,14 +151,48 @@ async function handleIncomingMessage(phone, text) {
 }
 
 async function processUserMessage(from, text) {
-
-  const result = await handleIncomingMessage(from, text);
   console.log("BOT RECEIVED TEXT:", text);
-
-  if (result && result.type === 'final') {
-    return { type: 'final', appt: result.appointment };
-  }
-  return result;
+  const reply = await generateGPTReply(text);
+  return { type: 'text', text: reply };
 }
 
-module.exports = { handleIncomingMessage, handleStep, resetState, detectCity, getEventForCity, getAvailableSlots, savePatient, saveAppointment, logMessage, sendText, sendOptions, sendFinalConfirmation, processUserMessage };
+async function generateGPTReply(prompt) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return 'Configuração inválida: OPENAI_API_KEY ausente.';
+  }
+  const payload = JSON.stringify({
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: 'Você é um assistente do Mutirão de Saúde. Responda de forma curta e clara em português.' },
+      { role: 'user', content: prompt }
+    ]
+  });
+  const options = {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }
+  };
+  return new Promise((resolve) => {
+    const req = https.request(new URL('https://api.openai.com/v1/chat/completions'), options, (res) => {
+      let data = '';
+      res.on('data', (d) => (data += d.toString()));
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data || '{}');
+          const content = json?.choices?.[0]?.message?.content?.trim();
+          resolve(content || 'Desculpe, não consegui responder agora.');
+        } catch (_) {
+          resolve('Desculpe, ocorreu um erro ao gerar a resposta.');
+        }
+      });
+    });
+    req.on('error', () => resolve('Falha na comunicação com o serviço de IA.'));
+    req.write(payload);
+    req.end();
+  });
+}
+
+module.exports = { handleIncomingMessage, handleStep, resetState, detectCity, getEventForCity, getAvailableSlots, savePatient, saveAppointment, logMessage, sendText, sendOptions, sendFinalConfirmation, processUserMessage, generateGPTReply };

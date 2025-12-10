@@ -3,7 +3,8 @@ const https = require('https');
 function postMessage(path, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
-    const url = new URL(`${process.env.WHATSAPP_API_URL}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/${path}`);
+    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const url = new URL(`https://graph.facebook.com/v17.0/${phoneId}/${path}`);
     const options = {
       method: 'POST',
       headers: {
