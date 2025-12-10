@@ -14,6 +14,13 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.error('JSON parse error on webhook:', err.message);
+    return res.status(200).send('Webhook received');
+  }
+  next(err);
+});
 
 app.get('/', (req, res) => {
   res.json(ok({ name: 'whatsapp_project_api' }, 'API running'));

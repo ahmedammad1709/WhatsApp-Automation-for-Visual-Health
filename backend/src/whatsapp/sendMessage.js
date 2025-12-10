@@ -4,7 +4,8 @@ function postMessage(path, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    const url = new URL(`https://graph.facebook.com/v17.0/${phoneId}/${path}`);
+    const base = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v20.0';
+    const url = new URL(`${base}/${phoneId}/${path}`);
     const options = {
       method: 'POST',
       headers: {
