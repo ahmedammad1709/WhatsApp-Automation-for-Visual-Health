@@ -24,6 +24,6 @@ app.use('/events', eventRoutes);
 app.use('/time-slots', timeSlotRoutes);
 app.use('/patients', patientRoutes);
 app.use('/appointments', appointmentRoutes);
-app.use('/webhook', whatsappRoutes);
+app.use('/', whatsappRoutes);
 
 module.exports = app;
