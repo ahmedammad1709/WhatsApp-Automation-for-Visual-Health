@@ -12,6 +12,9 @@ function postMessage(path, body) {
       return resolve({ error: 'missing_phone_number_id' });
     }
     const url = new URL(`${base}/${phoneId}/${path}`);
+    console.log('WhatsApp API version:', version);
+    console.log('WhatsApp API base:', base);
+    console.log('WhatsApp POST URL:', url.toString());
     const options = {
       method: 'POST',
       headers: {

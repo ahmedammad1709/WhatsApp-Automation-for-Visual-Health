@@ -4,7 +4,7 @@ require('dotenv').config();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const PUBLIC_API_URL = process.env.VITE_API_URL || `http://localhost:${PORT}`;
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
-const WHATSAPP_API_VERSION = process.env.WHATSAPP_API_VERSION || 'v19.0';
+const WHATSAPP_API_VERSION = process.env.WHATSAPP_API_VERSION || 'v15.0';
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PUBLIC_API_URL}`);
