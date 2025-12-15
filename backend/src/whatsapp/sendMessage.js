@@ -4,8 +4,13 @@ function postMessage(path, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    console.log("Phone number id : ", phoneId)
     const version = process.env.WHATSAPP_API_VERSION || 'v15.0';
     const base = process.env.WHATSAPP_API_URL || `https://graph.facebook.com/${version}`;
+    if (!phoneId) {
+      console.error('WhatsApp send error: WHATSAPP_PHONE_NUMBER_ID is not set in environment');
+      return resolve({ error: 'missing_phone_number_id' });
+    }
     const url = new URL(`${base}/${phoneId}/${path}`);
     const options = {
       method: 'POST',
