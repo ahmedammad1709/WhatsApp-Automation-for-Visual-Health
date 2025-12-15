@@ -1,9 +1,9 @@
 const https = require('https');
 
-function postMessage(path, body) {
+function postMessage(path, body, phoneOverride) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
-    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const phoneId = phoneOverride || process.env.WHATSAPP_PHONE_NUMBER_ID;
     console.log("Phone number id : ", phoneId)
     const version = process.env.WHATSAPP_API_VERSION || 'v15.0';
     const base = process.env.WHATSAPP_API_URL || `https://graph.facebook.com/${version}`;
@@ -43,17 +43,17 @@ function postMessage(path, body) {
   });
 }
 
-async function sendText(phone, text) {
+async function sendText(phone, text, phoneOverride) {
   const body = {
     messaging_product: 'whatsapp',
     to: phone,
     type: 'text',
     text: { body: text }
   };
-  return postMessage('messages', body);
+  return postMessage('messages', body, phoneOverride);
 }
 
-async function sendOptions(phone, title, options) {
+async function sendOptions(phone, title, options, phoneOverride) {
   const rows = (options || []).map((o, idx) => ({ id: o.id || String(idx + 1), title: o.title, description: o.description || '' }));
   const body = {
     messaging_product: 'whatsapp',
@@ -67,12 +67,12 @@ async function sendOptions(phone, title, options) {
       action: { button: 'Selecionar', sections: [{ title: 'Opções', rows }] }
     }
   };
-  return postMessage('messages', body);
+  return postMessage('messages', body, phoneOverride);
 }
 
-async function sendFinalConfirmation(phone, appt) {
+async function sendFinalConfirmation(phone, appt, phoneOverride) {
   const text = `Agendado: ${appt.slot_date} ${appt.slot_time} em ${appt.location} - ${appt.city_name}`;
-  return sendText(phone, text);
+  return sendText(phone, text, phoneOverride);
 }
 
 module.exports = { sendText, sendOptions, sendFinalConfirmation };

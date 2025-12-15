@@ -1,5 +1,7 @@
-const app = require('./app');
 require('dotenv').config();
+console.log('PHONE ID:', process.env.WHATSAPP_PHONE_NUMBER_ID);
+
+const app = require('./app');
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const PUBLIC_API_URL = process.env.VITE_API_URL || `http://localhost:${PORT}`;

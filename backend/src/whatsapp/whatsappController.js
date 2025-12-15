@@ -33,6 +33,7 @@ async function handleWebhook(req, res) {
     console.log('Received webhook:', JSON.stringify(req.body));
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     const message = entry?.messages?.[0];
+    const phoneNumberId = entry?.metadata?.phone_number_id;
     if (!message) return res.status(200).send('Webhook received');
     const from = message?.from;
     const text = extractTextFromMessage(message);
@@ -45,15 +46,15 @@ async function handleWebhook(req, res) {
     }
     console.log("INCOMING:", JSON.stringify(req.body, null, 2));
     if (result?.type === 'text' && result.text) {
-      await WhatsAppService.sendText(from, result.text);
+      await WhatsAppService.sendText(from, result.text, phoneNumberId);
       await WhatsAppService.logMessage(from, 'out', result.text);
     }
     if (result?.type === 'options') {
-      await WhatsAppService.sendOptions(from, result.title, result.options);
+      await WhatsAppService.sendOptions(from, result.title, result.options, phoneNumberId);
       await WhatsAppService.logMessage(from, 'out', result.title);
     }
     if (result?.type === 'final') {
-      await WhatsAppService.sendFinalConfirmation(from, result.appt);
+      await WhatsAppService.sendFinalConfirmation(from, result.appt, phoneNumberId);
       await WhatsAppService.logMessage(from, 'out', 'Confirmação enviada');
     }
     return res.status(200).send('Webhook received');

@@ -44,18 +44,18 @@ async function getAvailableSlots(eventId) {
   return AIFlow.getAvailableSlots(eventId);
 }
 
-async function sendText(phone, text) {
+async function sendText(phone, text, phoneOverride) {
   console.log("BOT SEND TEXT:", text);
 
-  return Sender.sendText(phone, text);
+  return Sender.sendText(phone, text, phoneOverride);
 }
 
-async function sendOptions(phone, title, options) {
-  return Sender.sendOptions(phone, title, options);
+async function sendOptions(phone, title, options, phoneOverride) {
+  return Sender.sendOptions(phone, title, options, phoneOverride);
 }
 
-async function sendFinalConfirmation(phone, appointmentObject) {
-  return Sender.sendFinalConfirmation(phone, appointmentObject);
+async function sendFinalConfirmation(phone, appointmentObject, phoneOverride) {
+  return Sender.sendFinalConfirmation(phone, appointmentObject, phoneOverride);
 }
 
 async function savePatient(data) {
