@@ -16,7 +16,6 @@ function postMessage(path, body, phoneOverride) {
     }
 
     // Construct URL strictly: https://graph.facebook.com/{API_VERSION}/{PHONE_NUMBER_ID}/messages
-    // path is usually 'messages'
     const urlStr = `https://graph.facebook.com/${version}/${phoneId}/${path}`;
     const url = new URL(urlStr);
 

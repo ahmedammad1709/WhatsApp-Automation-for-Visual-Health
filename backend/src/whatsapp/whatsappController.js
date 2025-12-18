@@ -38,9 +38,6 @@ function verifyWebhook(req, res) {
 async function handleWebhook(req, res) {
   try {
     console.log('[WEBHOOK] POST received from Meta');
-    // Always respond 200 OK immediately as per Meta requirement, 
-    // but here we process first then send. Ideally we send 200 then process, 
-    // but the existing structure waits. We will keep it but ensure 200 is sent.
     
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     const message = entry?.messages?.[0];

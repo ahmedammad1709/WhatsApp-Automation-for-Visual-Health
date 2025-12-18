@@ -1,5 +1,4 @@
 require('dotenv').config();
-console.log('PHONE ID:', process.env.WHATSAPP_PHONE_NUMBER_ID);
 
 const app = require('./app');
 
