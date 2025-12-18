@@ -4,17 +4,24 @@ function postMessage(path, body, phoneOverride) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const phoneId = phoneOverride || process.env.WHATSAPP_PHONE_NUMBER_ID;
-    console.log("Phone number id : ", phoneId)
-    const version = process.env.WHATSAPP_API_VERSION || 'v15.0';
-    const base = process.env.WHATSAPP_API_URL || `https://graph.facebook.com/${version}`;
+    const version = process.env.WHATSAPP_API_VERSION;
+
     if (!phoneId) {
-      console.error('WhatsApp send error: WHATSAPP_PHONE_NUMBER_ID is not set in environment');
+      console.error('[GRAPH API] Error: WHATSAPP_PHONE_NUMBER_ID is missing');
       return resolve({ error: 'missing_phone_number_id' });
     }
-    const url = new URL(`${base}/${phoneId}/${path}`);
-    console.log('WhatsApp API version:', version);
-    console.log('WhatsApp API base:', base);
-    console.log('WhatsApp POST URL:', url.toString());
+    if (!version) {
+      console.error('[GRAPH API] Error: WHATSAPP_API_VERSION is missing');
+      return resolve({ error: 'missing_api_version' });
+    }
+
+    // Construct URL strictly: https://graph.facebook.com/{API_VERSION}/{PHONE_NUMBER_ID}/messages
+    // path is usually 'messages'
+    const urlStr = `https://graph.facebook.com/${version}/${phoneId}/${path}`;
+    const url = new URL(urlStr);
+
+    console.log(`[GRAPH API] Sending to ${url.toString()}`);
+
     const options = {
       method: 'POST',
       headers: {
@@ -22,6 +29,7 @@ function postMessage(path, body, phoneOverride) {
         'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`
       }
     };
+
     const req = https.request(url, options, (res) => {
       let chunks = '';
       res.on('data', (d) => chunks += d.toString());
@@ -29,15 +37,21 @@ function postMessage(path, body, phoneOverride) {
         try {
           const json = JSON.parse(chunks || '{}');
           if (res.statusCode && res.statusCode >= 400) {
-            console.error('WhatsApp send error:', res.statusCode, json);
+            console.error(`[GRAPH API] Error ${res.statusCode}:`, JSON.stringify(json));
+          } else {
+            console.log(`[GRAPH API] Success: ${res.statusCode}`);
           }
           resolve(json);
         } catch (_) {
+          console.error('[GRAPH API] Response parse error');
           resolve({});
         }
       });
     });
-    req.on('error', reject);
+    req.on('error', (e) => {
+      console.error('[GRAPH API] Network error:', e);
+      reject(e);
+    });
     req.write(data);
     req.end();
   });
