@@ -28,4 +28,4 @@ async function listEventsByCity(city_id) {
   return rows;
 }
 
-module.exports = { listEvents, createEvent, deleteEvent, listEventsByCity };
+module.exports = { listEvents, createEvent, deleteEvent, updateEvent, listEventsByCity };

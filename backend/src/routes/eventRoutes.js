@@ -11,6 +11,7 @@ const EventController = require('../controllers/eventController');
 
 router.get('/', EventController.list);
 router.post('/', EventController.create);
+router.put('/:id', EventController.update);
 router.delete('/:id', EventController.remove);
 router.get('/city/:city_id', EventController.listByCity);
 

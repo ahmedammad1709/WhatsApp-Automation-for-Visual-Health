@@ -3,9 +3,12 @@ const CityService = require('../services/cityService');
 
 async function list(req, res) {
   try {
+    console.log('[API] Fetching cities...');
     const data = await CityService.listCities();
+    console.log(`[API] Found ${data.length} cities`);
     res.json(ok(data, 'Cities fetched'));
   } catch (e) {
+    console.error('[API] Failed to fetch cities:', e);
     res.status(500).json(error('Failed to fetch cities'));
   }
 }

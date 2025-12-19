@@ -26,8 +26,8 @@ app.get('/', (req, res) => {
   res.json(ok({ name: 'whatsapp_project_api' }, 'API running'));
 });
 
-app.use('/cities', cityRoutes);
-app.use('/events', eventRoutes);
+app.use('/api/cities', cityRoutes);
+app.use('/api/events', eventRoutes);
 app.use('/time-slots', timeSlotRoutes);
 app.use('/patients', patientRoutes);
 app.use('/appointments', appointmentRoutes);

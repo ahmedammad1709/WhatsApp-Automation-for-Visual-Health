@@ -2,6 +2,8 @@ import axios from 'axios';
 
 // API base configuration
 // Purpose: Centralized API layer for all backend communications
+console.log('API Base URL:', import.meta.env.VITE_API_URL);
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 10000,
@@ -45,43 +47,43 @@ export const getDashboardStats = async () => {
 
 // Events API
 export const getEvents = async (params?: any) => {
-  const response = await api.get('/events', { params });
+  const response = await api.get('/api/events', { params });
   return response.data?.data ?? [];
 };
 
 export const createEvent = async (eventData: any) => {
-  const response = await api.post('/events', eventData);
+  const response = await api.post('/api/events', eventData);
   return response.data?.data;
 };
 
 export const updateEvent = async (id: string, eventData: any) => {
-  const response = await api.put(`/events/${id}`, eventData);
+  const response = await api.put(`/api/events/${id}`, eventData);
   return response.data;
 };
 
 export const deleteEvent = async (id: string) => {
-  const response = await api.delete(`/events/${id}`);
+  const response = await api.delete(`/api/events/${id}`);
   return response.data?.data;
 };
 
 // Cities API
 export const getCities = async () => {
-  const response = await api.get('/cities');
+  const response = await api.get('/api/cities');
   return response.data?.data ?? [];
 };
 
 export const createCity = async (city: { name: string; state: string }) => {
-  const response = await api.post('/cities', city);
+  const response = await api.post('/api/cities', city);
   return response.data?.data;
 };
 
 export const updateCity = async (id: number | string, city: { name: string; state: string }) => {
-  const response = await api.put(`/cities/${id}`, city);
+  const response = await api.put(`/api/cities/${id}`, city);
   return response.data?.data;
 };
 
 export const deleteCity = async (id: number | string) => {
-  const response = await api.delete(`/cities/${id}`);
+  const response = await api.delete(`/api/cities/${id}`);
   return response.data?.data;
 };
 

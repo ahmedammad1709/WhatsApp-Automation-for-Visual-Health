@@ -3,9 +3,12 @@ const EventService = require('../services/eventService');
 
 async function list(req, res) {
   try {
+    console.log('[API] Fetching events...');
     const data = await EventService.listEvents();
+    console.log(`[API] Found ${data.length} events`);
     res.json(ok(data, 'Events fetched'));
   } catch (e) {
+    console.error('[API] Failed to fetch events:', e);
     res.status(500).json(error('Failed to fetch events'));
   }
 }
@@ -46,4 +49,4 @@ async function listByCity(req, res) {
   }
 }
 
-module.exports = { list, create, remove, listByCity };
+module.exports = { list, create, remove, update, listByCity };
