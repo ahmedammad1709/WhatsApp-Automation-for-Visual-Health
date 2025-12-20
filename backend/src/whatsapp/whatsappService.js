@@ -145,34 +145,44 @@ async function startFlow(phone) {
 }
 
 async function handleNameInput(phone, text) {
-    if (text.length < 2) {
-        return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
+    try {
+        console.log(`[HANDLE NAME] Processing name input for ${phone}: ${text}`);
+        if (text.length < 2) {
+            return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
+        }
+
+        // Save Name -> Ask City
+        // We can fetch cities to show as options or just ask.
+        // Flow says: "Ask politely for full name... Move to ASK_CITY"
+        // Does ASK_CITY show a list?
+        // "ASK_CITY... Store each input... Do not write to database yet."
+        // Usually cities are a fixed list. I will show them for better UX.
+        
+        const [cities] = await pool.query('SELECT id, name FROM cities ORDER BY name');
+        if (cities.length === 0) {
+            console.error('[HANDLE NAME] No cities found in DB');
+            throw new Error('No cities configured in system.');
+        }
+
+        console.log(`[HANDLE NAME] Updating session for ${phone}`);
+        await updateSession(phone, { step: 'ASK_CITY', full_name: text });
+
+        // Limit to 10 cities to avoid WhatsApp List message limit
+        const options = cities.slice(0, 10).map(c => ({
+            id: String(c.id), // ID for internal, but we match text
+            title: c.name
+        }));
+
+        console.log(`[HANDLE NAME] Returning options for ${phone}`);
+        return {
+            type: 'options',
+            title: `Thanks, ${text}! 😊 Now, please select your city:`,
+            options
+        };
+    } catch (e) {
+        console.error(`[HANDLE NAME ERROR] ${phone}:`, e);
+        throw e;
     }
-
-    // Save Name -> Ask City
-    // We can fetch cities to show as options or just ask.
-    // Flow says: "Ask politely for full name... Move to ASK_CITY"
-    // Does ASK_CITY show a list?
-    // "ASK_CITY... Store each input... Do not write to database yet."
-    // Usually cities are a fixed list. I will show them for better UX.
-    
-    const [cities] = await pool.query('SELECT id, name FROM cities ORDER BY name');
-    if (cities.length === 0) {
-        throw new Error('No cities configured in system.');
-    }
-
-    await updateSession(phone, { step: 'ASK_CITY', full_name: text });
-
-    const options = cities.map(c => ({
-        id: String(c.id), // ID for internal, but we match text
-        title: c.name
-    }));
-
-    return {
-        type: 'options',
-        title: `Thanks, ${text}! 😊 Now, please select your city:`,
-        options
-    };
 }
 
 async function handleCityInput(phone, text) {
@@ -419,10 +429,20 @@ async function sendText(phone, text, phoneId) {
     }
 }
 
+async function sendOptions(phone, title, options, phoneId) {
+    try {
+        await Sender.sendOptions(phone, title, options, phoneId);
+    } catch (e) {
+        console.error('[SEND ERROR] Failed to send options:', e);
+        throw e;
+    }
+}
+
 module.exports = {
   handleIncomingMessage,
   logMessage,
   sendText,
+  sendOptions,
   getSession,
   createSession,
   resetSession,
