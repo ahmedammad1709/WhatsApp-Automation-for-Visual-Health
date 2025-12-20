@@ -38,11 +38,34 @@ async function createEvent({ city_id, location, start_date, end_date, max_capaci
         return `${hours}:${minutes}:00`;
       };
       
-      const sqlTime = formatTime(startTime);
+      const sqlStartTime = formatTime(startTime);
+      const sqlEndTime = formatTime(endTime);
 
-      // Create only one time slot for the start date
-      const slotDate = new Date(start_date).toISOString().split('T')[0];
-      slots.push([eventId, slotDate, sqlTime, max_capacity, 0]);
+      // Generate 30-minute slots for each day in the range
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const currentDateStr = d.toISOString().split('T')[0];
+        
+        // Create Date objects for time comparison logic
+        // We use a dummy date (e.g., 1970-01-01) or the current date to step through times
+        // But simpler: just manipulate the hours/minutes
+        
+        let [startH, startM] = sqlStartTime.split(':').map(Number);
+        let [endH, endM] = sqlEndTime.split(':').map(Number);
+        
+        // Current time pointer (in minutes from midnight)
+        let currentMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+
+        while (currentMinutes < endMinutes) {
+          const h = Math.floor(currentMinutes / 60);
+          const m = currentMinutes % 60;
+          const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+          
+          slots.push([eventId, currentDateStr, timeStr, max_capacity, 0]);
+          
+          currentMinutes += 30; // Increment by 30 minutes
+        }
+      }
 
       if (slots.length > 0) {
         await connection.query(
