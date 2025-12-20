@@ -26,11 +26,22 @@ app.get('/', (req, res) => {
   res.json(ok({ name: 'whatsapp_project_api' }, 'API running'));
 });
 
+// Support both /api/ prefix (standard) and root paths (in case Nginx strips /api)
 app.use('/api/cities', cityRoutes);
+app.use('/cities', cityRoutes);
+
 app.use('/api/events', eventRoutes);
+app.use('/events', eventRoutes);
+
 app.use('/api/time-slots', timeSlotRoutes);
+app.use('/time-slots', timeSlotRoutes);
+
 app.use('/api/patients', patientRoutes);
+app.use('/patients', patientRoutes);
+
 app.use('/api/appointments', appointmentRoutes);
+app.use('/appointments', appointmentRoutes);
+
 app.use('/', whatsappRoutes);
 
 module.exports = app;
