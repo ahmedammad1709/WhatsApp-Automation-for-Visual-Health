@@ -28,4 +28,15 @@ async function listEventsByCity(city_id) {
   return rows;
 }
 
+async function updateEvent(id, { city_id, location, start_date, end_date, max_capacity, notes }) {
+  const [result] = await pool.query(
+    'UPDATE events SET city_id = ?, location = ?, start_date = ?, end_date = ?, max_capacity = ?, notes = ? WHERE id = ?',
+    [city_id, location, start_date, end_date, max_capacity, notes || null, id]
+  );
+  if (result.affectedRows > 0) {
+    return { id, city_id, location, start_date, end_date, max_capacity, notes: notes || null };
+  }
+  return null;
+}
+
 module.exports = { listEvents, createEvent, deleteEvent, updateEvent, listEventsByCity };

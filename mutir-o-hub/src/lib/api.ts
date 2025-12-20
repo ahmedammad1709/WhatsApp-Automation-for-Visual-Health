@@ -41,7 +41,7 @@ api.interceptors.response.use(
 
 // Dashboard Stats
 export const getDashboardStats = async () => {
-  const response = await api.get('/dashboard/stats');
+  const response = await api.get('/api/dashboard/stats');
   return response.data;
 };
 
@@ -89,17 +89,17 @@ export const deleteCity = async (id: number | string) => {
 
 // Appointments API
 export const getAppointments = async (params?: any) => {
-  const response = await api.get('/appointments', { params });
+  const response = await api.get('/api/appointments', { params });
   return response.data;
 };
 
 export const markAttended = async (id: string) => {
-  const response = await api.patch(`/appointments/${id}/attended`);
+  const response = await api.patch(`/api/appointments/${id}/attended`);
   return response.data;
 };
 
 export const exportAppointments = async (params?: any) => {
-  const response = await api.get('/appointments/export', {
+  const response = await api.get('/api/appointments/export', {
     params,
     responseType: 'blob',
   });
@@ -108,30 +108,30 @@ export const exportAppointments = async (params?: any) => {
 
 // Reports API
 export const getDailyReport = async (date: string) => {
-  const response = await api.get(`/reports/daily/${date}`);
+  const response = await api.get(`/api/reports/daily/${date}`);
   return response.data;
 };
 
 export const getDateRangeReport = async (startDate: string, endDate: string) => {
-  const response = await api.get('/reports/range', {
+  const response = await api.get('/api/reports/range', {
     params: { startDate, endDate },
   });
   return response.data;
 };
 
 export const sendReportToWhatsapp = async (reportId: string) => {
-  const response = await api.post('/reports/send-whatsapp', { reportId });
+  const response = await api.post('/api/reports/send-whatsapp', { reportId });
   return response.data;
 };
 
 // Settings API
 export const getSettings = async () => {
-  const response = await api.get('/settings');
+  const response = await api.get('/api/settings');
   return response.data;
 };
 
 export const updateSettings = async (settings: any) => {
-  const response = await api.put('/settings', settings);
+  const response = await api.put('/api/settings', settings);
   return response.data;
 };
 

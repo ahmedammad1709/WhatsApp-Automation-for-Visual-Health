@@ -49,4 +49,19 @@ async function listByCity(req, res) {
   }
 }
 
+async function update(req, res) {
+  const id = parseInt(req.params.id, 10);
+  const { city_id, location, start_date, end_date, max_capacity, notes } = req.body || {};
+  if (!id || !city_id || !location || !start_date || !end_date || !max_capacity) {
+    return res.status(400).json(error('id, city_id, location, start_date, end_date, max_capacity are required'));
+  }
+  try {
+    const updated = await EventService.updateEvent(id, { city_id, location, start_date, end_date, max_capacity, notes });
+    if (!updated) return res.status(404).json(error('Event not found'));
+    res.json(ok(updated, 'Event updated'));
+  } catch (e) {
+    res.status(500).json(error('Failed to update event'));
+  }
+}
+
 module.exports = { list, create, remove, update, listByCity };

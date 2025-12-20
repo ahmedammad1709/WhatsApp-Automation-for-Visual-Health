@@ -28,9 +28,9 @@ app.get('/', (req, res) => {
 
 app.use('/api/cities', cityRoutes);
 app.use('/api/events', eventRoutes);
-app.use('/time-slots', timeSlotRoutes);
-app.use('/patients', patientRoutes);
-app.use('/appointments', appointmentRoutes);
+app.use('/api/time-slots', timeSlotRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/appointments', appointmentRoutes);
 app.use('/', whatsappRoutes);
 
 module.exports = app;
