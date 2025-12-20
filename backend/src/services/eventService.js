@@ -64,8 +64,27 @@ async function createEvent({ city_id, location, start_date, end_date, max_capaci
 }
 
 async function deleteEvent(id) {
-  const [result] = await pool.query('DELETE FROM events WHERE id = ?', [id]);
-  return result.affectedRows > 0;
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Delete Appointments linked to this event
+    await connection.query('DELETE FROM appointments WHERE event_id = ?', [id]);
+
+    // 2. Delete Time Slots linked to this event
+    await connection.query('DELETE FROM time_slots WHERE event_id = ?', [id]);
+
+    // 3. Delete Event
+    const [result] = await connection.query('DELETE FROM events WHERE id = ?', [id]);
+    
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (e) {
+    await connection.rollback();
+    throw e;
+  } finally {
+    connection.release();
+  }
 }
 
 async function listEventsByCity(city_id) {
