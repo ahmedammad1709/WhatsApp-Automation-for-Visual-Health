@@ -213,27 +213,34 @@ async function handleStep(phone, text, state) {
     }
     
     temp.reason = text.trim();
-    await upsertState(phone, 'select_event', temp);
     
-    // Get events for selected city dynamically from DB
+    // Get events for selected city dynamically from DB using city.id
     let events = [];
     try {
       if (!temp.city || !temp.city.id) {
-        return { type: 'text', text: 'Error: City information missing. Please start over.' };
+        return { type: 'text', text: 'Error: City information missing. Please start over by sending a new message.' };
       }
       
+      // Fetch all events for the city (remove date filter to allow booking for any event)
       const [eventRows] = await pool.query(
-        'SELECT id, location, start_date, end_date, max_capacity, notes FROM events WHERE city_id = ? AND end_date >= CURDATE() ORDER BY start_date ASC',
+        'SELECT id, city_id, location, start_date, end_date, max_capacity, notes FROM events WHERE city_id = ? ORDER BY start_date ASC',
         [temp.city.id]
       );
       events = eventRows;
     } catch (e) {
       console.error('Error fetching events:', e);
-      return { type: 'text', text: 'Sorry, I encountered an error fetching events. Please try again.' };
+      // Store current state and ask user what to do
+      await upsertState(phone, 'no_events_found', temp);
+      return { type: 'text', text: `Sorry, I encountered an error fetching events for ${temp.city.name || 'your selected city'}. Would you like to book a general appointment anyway or select a different city? (Reply "general" or "different city")` };
     }
     
+    // Store events in conversation_states for tracking
+    temp.events = events;
+    
     if (events.length === 0) {
-      return { type: 'text', text: `Thank you for the information. Unfortunately, there are no upcoming events in ${temp.city.name || 'your selected city'} at the moment. Please check back later or contact us for more information.` };
+      // No events found - ask user what they want to do
+      await upsertState(phone, 'no_events_found', temp);
+      return { type: 'text', text: `There are no upcoming events in ${temp.city.name || 'your selected city'}. Would you like to book a general appointment anyway or select a different city? (Reply "general" or "different city")` };
     }
     
     // Format events list
@@ -243,10 +250,93 @@ async function handleStep(phone, text, state) {
       return `${idx + 1}. ${e.location} (${startDate} to ${endDate})`;
     }).join('\n');
     
-    temp.events = events;
+    // Store events in conversation state and move to event selection
     await upsertState(phone, 'select_event', temp);
     
-    return { type: 'text', text: `Here are the upcoming events in ${temp.city.name}:\n\n${eventList}\n\nPlease reply with the number of the event you'd like to book.` };
+    return { type: 'text', text: `Here are the events in ${temp.city.name}:\n\n${eventList}\n\nPlease reply with the number of the event you'd like to book.` };
+  }
+  
+  // Handle no events found scenario
+  if (current === 'no_events_found') {
+    const lowerText = text.toLowerCase().trim();
+    
+    if (lowerText.includes('general') || lowerText.includes('yes') || lowerText.includes('sim') || lowerText.includes('book general')) {
+      // User wants to book general appointment - find available time slots from any event in the city
+      try {
+        if (!temp.city || !temp.city.id) {
+          return { type: 'text', text: 'Error: City information missing. Please start over.' };
+        }
+        
+        // Find all available time slots from all events in this city
+        const [slotRows] = await pool.query(
+          `SELECT ts.id, ts.event_id, ts.slot_date, ts.slot_time, ts.max_per_slot, ts.reserved_count,
+                  e.location, e.start_date, e.end_date
+           FROM time_slots ts
+           INNER JOIN events e ON e.id = ts.event_id
+           WHERE e.city_id = ? AND ts.reserved_count < ts.max_per_slot
+           ORDER BY ts.slot_date ASC, ts.slot_time ASC
+           LIMIT 20`,
+          [temp.city.id]
+        );
+        
+        if (slotRows.length === 0) {
+          return { type: 'text', text: 'Unfortunately, there are no available time slots in your city at the moment. Would you like to select a different city? (Reply "different city")' };
+        }
+        
+        // Store slots and mark as general appointment
+        temp.is_general_appointment = true;
+        temp.slots = slotRows;
+        await upsertState(phone, 'select_time_slot', temp);
+        
+        // Format slots as options
+        const slotOptions = slotRows.map((s, idx) => ({
+          id: String(s.id),
+          title: `${new Date(s.slot_date).toLocaleDateString('pt-BR')} at ${s.slot_time}`,
+          description: `${s.location} - ${s.max_per_slot - s.reserved_count} spots`
+        }));
+        
+        return { type: 'options', title: 'Select a time slot for your general appointment', options: slotOptions };
+      } catch (e) {
+        console.error('Error fetching time slots for general appointment:', e);
+        return { type: 'text', text: 'Sorry, I encountered an error. Please try again or select a different city.' };
+      }
+    } else if (lowerText.includes('different') || lowerText.includes('city') || lowerText.includes('change') || lowerText.includes('other')) {
+      // User wants to select a different city - go back to city selection
+      temp.city = null;
+      temp.city_name = null;
+      await upsertState(phone, 'ask_city', temp);
+      
+      // Fetch available cities
+      let cities = [];
+      try {
+        const [cityRows] = await pool.query('SELECT id, name, state FROM cities ORDER BY name');
+        cities = cityRows;
+        if (cities.length === 0) {
+          return { type: 'text', text: 'Sorry, there are no cities available. Please contact support.' };
+        }
+        const cityList = cities.map(c => c.name).join(', ');
+        return { type: 'text', text: `Here are the available cities: ${cityList}. Which city would you like to select?` };
+      } catch (e) {
+        console.error('Error fetching cities:', e);
+        return { type: 'text', text: 'Sorry, I encountered an error fetching cities. Please try again.' };
+      }
+    } else {
+      // Invalid response - ask again (prevent infinite loop by limiting retries)
+      if (!temp.no_events_retry_count) {
+        temp.no_events_retry_count = 1;
+      } else {
+        temp.no_events_retry_count++;
+      }
+      
+      // After 3 retries, reset to prevent infinite loop
+      if (temp.no_events_retry_count >= 3) {
+        await resetState(phone);
+        return { type: 'text', text: 'I didn\'t understand your response. Let\'s start over. Hi! I\'m your appointment assistant from Instituto Luz no Caminho. May I know your full name?' };
+      }
+      
+      await upsertState(phone, 'no_events_found', temp);
+      return { type: 'text', text: `There are no events in ${temp.city?.name || 'your selected city'}. Would you like to book a general appointment anyway or select a different city? (Reply "general" or "different city")` };
+    }
   }
   
   // Step 5: Show Upcoming Events
@@ -278,11 +368,15 @@ async function handleStep(phone, text, state) {
     
     temp.event = temp.events[eventIndex];
     temp.event_id = temp.event.id;
+    temp.event_location = temp.event.location;
     await upsertState(phone, 'select_time_slot', temp);
     
-    // Get available time slots dynamically from DB
+    // Get available time slots dynamically from DB using event.id
     let slots = [];
     try {
+      if (!temp.event.id) {
+        return { type: 'text', text: 'Error: Event information missing. Please start over.' };
+      }
       slots = await getAvailableSlots(temp.event.id);
     } catch (e) {
       console.error('Error fetching time slots:', e);
@@ -290,7 +384,16 @@ async function handleStep(phone, text, state) {
     }
     
     if (slots.length === 0) {
-      return { type: 'text', text: 'Unfortunately, there are no available time slots for this event. Please select another event or check back later.' };
+      // If no slots available, ask if they want to select a different event
+      if (temp.events && temp.events.length > 1) {
+        const eventList = temp.events.map((e, idx) => {
+          const startDate = new Date(e.start_date).toLocaleDateString('pt-BR');
+          const endDate = new Date(e.end_date).toLocaleDateString('pt-BR');
+          return `${idx + 1}. ${e.location} (${startDate} to ${endDate})`;
+        }).join('\n');
+        return { type: 'text', text: `Unfortunately, there are no available time slots for this event. Please select another event:\n\n${eventList}` };
+      }
+      return { type: 'text', text: 'Unfortunately, there are no available time slots for this event. Please check back later or contact us.' };
     }
     
     // Format slots as options
@@ -320,13 +423,33 @@ async function handleStep(phone, text, state) {
     
     // Store selected slot ID
     temp.selected_slot_id = chosen.id;
+    
+    // For general appointments, get event info from the slot
+    if (temp.is_general_appointment && chosen.event_id) {
+      try {
+        const [eventRows] = await pool.query('SELECT id, location, start_date, end_date FROM events WHERE id = ?', [chosen.event_id]);
+        if (eventRows[0]) {
+          temp.event = eventRows[0];
+          temp.event_id = eventRows[0].id;
+        }
+      } catch (e) {
+        console.error('Error fetching event for general appointment:', e);
+      }
+    }
+    
     await upsertState(phone, 'confirm_booking', temp);
     
     // Prepare confirmation message
-    const eventDate = new Date(temp.event.start_date).toLocaleDateString('pt-BR');
     const slotDate = new Date(chosen.slot_date).toLocaleDateString('pt-BR');
+    let eventInfo = '';
+    if (temp.event && temp.event.location) {
+      const eventDate = temp.event.start_date ? new Date(temp.event.start_date).toLocaleDateString('pt-BR') : 'TBD';
+      eventInfo = `Event: ${temp.event.location} (${eventDate})\n`;
+    } else if (temp.is_general_appointment) {
+      eventInfo = 'Event: General Appointment\n';
+    }
     
-    return { type: 'text', text: `Please confirm your appointment:\n\nPatient: ${temp.full_name}\nCity: ${temp.city.name}\nNeighborhood: ${temp.neighborhood}\nReason: ${temp.reason}\nEvent: ${temp.event.location} (${eventDate})\nTime Slot: ${slotDate} at ${chosen.slot_time}\n\nReply "yes" to confirm or "no" to cancel.` };
+    return { type: 'text', text: `Please confirm your appointment:\n\nPatient: ${temp.full_name}\nCity: ${temp.city.name}\nNeighborhood: ${temp.neighborhood}\nReason: ${temp.reason}\n${eventInfo}Time Slot: ${slotDate} at ${chosen.slot_time}\n\nReply "yes" to confirm or "no" to cancel.` };
   }
   
   // Step 7: Confirm Appointment
@@ -335,8 +458,27 @@ async function handleStep(phone, text, state) {
     if (lowerText === 'yes' || lowerText === 'sim' || lowerText === 'confirm' || lowerText === 'confirmar') {
       try {
         // Validate all required fields are present
-        if (!temp.full_name || !temp.city || !temp.event || !temp.selected_slot_id) {
+        if (!temp.full_name || !temp.city || !temp.selected_slot_id) {
           return { type: 'text', text: 'Error: Missing required information. Please start over by sending a new message.' };
+        }
+        
+        // Get event_id from the selected slot if it's a general appointment
+        let eventId = temp.event_id || (temp.event ? temp.event.id : null);
+        if (!eventId && temp.selected_slot_id) {
+          try {
+            const [slotRows] = await pool.query('SELECT event_id FROM time_slots WHERE id = ?', [temp.selected_slot_id]);
+            if (slotRows[0] && slotRows[0].event_id) {
+              eventId = slotRows[0].event_id;
+              temp.event_id = eventId;
+            }
+          } catch (e) {
+            console.error('Error fetching event_id from slot:', e);
+            return { type: 'text', text: 'Error: Could not find event information. Please start over.' };
+          }
+        }
+        
+        if (!eventId) {
+          return { type: 'text', text: 'Error: Event information missing. Please start over.' };
         }
         
         // Check if patient exists, if not create one with all collected data
@@ -367,8 +509,8 @@ async function handleStep(phone, text, state) {
           return { type: 'text', text: 'Error: No time slot selected. Please start over.' };
         }
         
-        // Create appointment
-        const appt = await saveAppointment(patientId, temp.event.id, selectedSlotId);
+        // Create appointment using the event_id
+        const appt = await saveAppointment(patientId, eventId, selectedSlotId);
         
         // Mark conversation as completed
         await upsertState(phone, 'completed', temp);
@@ -407,7 +549,7 @@ async function handleStep(phone, text, state) {
 
 async function handleIncomingMessage(phone, text) {
   try {
-    const state = await getState(phone);
+  const state = await getState(phone);
     const result = await handleStep(phone, text, state);
     
     // Ensure we always return a valid result
