@@ -40,10 +40,9 @@ async function createEvent({ city_id, location, start_date, end_date, max_capaci
       
       const sqlTime = formatTime(startTime);
 
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const slotDate = d.toISOString().split('T')[0];
-        slots.push([eventId, slotDate, sqlTime, max_capacity, 0]);
-      }
+      // Create only one time slot for the start date
+      const slotDate = new Date(start_date).toISOString().split('T')[0];
+      slots.push([eventId, slotDate, sqlTime, max_capacity, 0]);
 
       if (slots.length > 0) {
         await connection.query(
