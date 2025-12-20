@@ -64,8 +64,9 @@ async function handleWebhook(req, res) {
       try {
         // Use structured flow for appointment booking
         // ChatGPT is used within the flow for natural responses when needed
-        const state = await WhatsAppService.getState(from);
-        const currentStep = state ? state.current_step : 'start';
+        // Fix: Use getSession instead of getState since getState is not exported/implemented
+        const session = await WhatsAppService.getSession(from);
+        const currentStep = session ? session.step : 'start';
         
         // Always use structured flow for booking process
         result = await WhatsAppService.handleIncomingMessage(from, text.trim());
@@ -74,7 +75,8 @@ async function handleWebhook(req, res) {
         if (currentStep === 'start' || !currentStep) {
           const lowerText = text.toLowerCase();
           if (lowerText.includes('agendar') || lowerText.includes('marcar') || lowerText.includes('consulta') || lowerText.includes('appointment') || lowerText.includes('book') || lowerText.includes('hi') || lowerText.includes('hello') || lowerText.includes('olá') || lowerText.includes('oi')) {
-            result = await WhatsAppService.handleIncomingMessage(from, text.trim());
+            // Already handled by handleIncomingMessage above, but logic here seems redundant if handleIncomingMessage handles everything
+            // Let's rely on handleIncomingMessage returning the correct response.
           }
         }
       } catch (e) {

@@ -399,12 +399,33 @@ async function handleSlotSelection(phone, text, session) {
 
 // --- Exports ---
 
+async function logMessage(phone, direction, text) {
+    try {
+        await pool.query(
+            'INSERT INTO conversation_logs (whatsapp_number, direction, message, created_at) VALUES (?, ?, ?, NOW())',
+            [phone, direction, text]
+        );
+    } catch (e) {
+        console.error('[LOG ERROR] Failed to log message:', e);
+    }
+}
+
+async function sendText(phone, text, phoneId) {
+    try {
+        await Sender.sendText(phone, text, phoneId);
+    } catch (e) {
+        console.error('[SEND ERROR] Failed to send text:', e);
+        throw e;
+    }
+}
+
 module.exports = {
   handleIncomingMessage,
-  // Helper exports if needed by tests
+  logMessage,
+  sendText,
   getSession,
   createSession,
   resetSession,
-  // Mapping to existing controller usage
+  // Helper exports if needed by tests
   processUserMessage: handleIncomingMessage // Alias if used elsewhere
 };
