@@ -3,7 +3,7 @@ const pool = require('../config/db');
 /**
  * Transactional booking logic
  */
-async function bookSlot({ whatsapp_number, city, neighborhood, reason, event_id, time_slot_id }) {
+async function bookSlot({ whatsapp_number, full_name, city, neighborhood, reason, event_id, time_slot_id }) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
@@ -31,7 +31,7 @@ async function bookSlot({ whatsapp_number, city, neighborhood, reason, event_id,
     } else {
       const [createResult] = await connection.query(
         'INSERT INTO patients (whatsapp_number, full_name, city, neighborhood, reason, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-        [whatsapp_number, 'WhatsApp User', city, neighborhood, reason]
+        [whatsapp_number, full_name || 'WhatsApp User', city, neighborhood, reason]
       );
       patientId = createResult.insertId;
     }
@@ -61,13 +61,20 @@ async function bookSlot({ whatsapp_number, city, neighborhood, reason, event_id,
         'SELECT slot_date, slot_time FROM time_slots WHERE id = ?',
         [time_slot_id]
     );
+    
+    // Fetch event location for confirmation message
+    const [eventDetails] = await connection.query(
+        'SELECT location FROM events WHERE id = ?',
+        [event_id]
+    );
 
     await connection.commit();
     
     return { 
         appointmentId: apptResult.insertId, 
         slot_date: slotDetails[0].slot_date,
-        slot_time: slotDetails[0].slot_time 
+        slot_time: slotDetails[0].slot_time,
+        location: eventDetails[0]?.location || city // Fallback to city if location missing
     };
 
   } catch (e) {

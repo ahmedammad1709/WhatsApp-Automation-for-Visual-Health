@@ -12,11 +12,13 @@ async function migrate() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         whatsapp_number VARCHAR(50) NOT NULL UNIQUE,
         step VARCHAR(50) NOT NULL,
+        full_name VARCHAR(100),
         city VARCHAR(100),
         neighborhood VARCHAR(100),
         reason VARCHAR(255),
         event_id INT,
         session_version INT DEFAULT 1,
+        metadata JSON,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
