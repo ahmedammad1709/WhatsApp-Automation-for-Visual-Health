@@ -87,15 +87,82 @@ export const deleteCity = async (id: number | string) => {
   return response.data?.data;
 };
 
+// Patients API
+export const getPatients = async () => {
+  const response = await api.get('/api/patients');
+  return response.data?.data ?? [];
+};
+
+export const getPatientById = async (id: string | number) => {
+  const response = await api.get(`/api/patients/${id}`);
+  return response.data?.data;
+};
+
+export const createPatient = async (patientData: any) => {
+  const response = await api.post('/api/patients', patientData);
+  return response.data?.data;
+};
+
+// Time Slots API
+export const getTimeSlots = async () => {
+  const response = await api.get('/api/time-slots');
+  return response.data?.data ?? [];
+};
+
+export const getTimeSlotsByEvent = async (eventId: string | number) => {
+  const response = await api.get(`/api/time-slots/event/${eventId}`);
+  return response.data?.data ?? [];
+};
+
+export const createTimeSlot = async (timeSlotData: any) => {
+  const response = await api.post('/api/time-slots', timeSlotData);
+  return response.data?.data;
+};
+
+export const deleteTimeSlot = async (id: string | number) => {
+  const response = await api.delete(`/api/time-slots/${id}`);
+  return response.data;
+};
+
+// Conversation Logs API
+export const getConversationLogs = async () => {
+  const response = await api.get('/api/conversation-logs');
+  return response.data?.data ?? [];
+};
+
+export const getConversationLogsByPhone = async (phone: string) => {
+  const response = await api.get(`/api/conversation-logs/phone/${phone}`);
+  return response.data?.data ?? [];
+};
+
 // Appointments API
 export const getAppointments = async (params?: any) => {
   const response = await api.get('/api/appointments', { params });
+  return response.data?.data ?? [];
+};
+
+export const getAppointmentById = async (id: string | number) => {
+  const response = await api.get(`/api/appointments/${id}`);
+  return response.data?.data;
+};
+
+export const createAppointment = async (appointmentData: any) => {
+  const response = await api.post('/api/appointments', appointmentData);
+  return response.data?.data;
+};
+
+export const updateAppointmentStatus = async (id: string | number, status: string) => {
+  const response = await api.patch(`/api/appointments/${id}/status`, { status });
+  return response.data;
+};
+
+export const deleteAppointment = async (id: string | number) => {
+  const response = await api.delete(`/api/appointments/${id}`);
   return response.data;
 };
 
 export const markAttended = async (id: string) => {
-  const response = await api.patch(`/api/appointments/${id}/attended`);
-  return response.data;
+  return updateAppointmentStatus(id, 'completed');
 };
 
 export const exportAppointments = async (params?: any) => {

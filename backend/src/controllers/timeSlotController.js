@@ -38,4 +38,14 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { listByEvent, create, remove };
+async function getAll(req, res) {
+  try {
+    const data = await TimeSlotService.getAllTimeSlots();
+    res.json(ok(data, 'Time slots fetched'));
+  } catch (e) {
+    console.error('Error fetching time slots:', e);
+    res.status(500).json(error('Failed to fetch time slots'));
+  }
+}
+
+module.exports = { listByEvent, create, remove, getAll };

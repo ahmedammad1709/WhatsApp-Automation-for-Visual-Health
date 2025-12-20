@@ -26,4 +26,14 @@ async function getById(req, res) {
   }
 }
 
-module.exports = { create, getById };
+async function getAll(req, res) {
+  try {
+    const data = await PatientService.getAllPatients();
+    res.json(ok(data, 'Patients fetched'));
+  } catch (e) {
+    console.error('Error fetching patients:', e);
+    res.status(500).json(error('Failed to fetch patients'));
+  }
+}
+
+module.exports = { create, getById, getAll };

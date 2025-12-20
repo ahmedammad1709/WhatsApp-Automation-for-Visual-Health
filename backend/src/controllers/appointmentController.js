@@ -37,4 +37,28 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { create, listByEvent, remove };
+async function getAll(req, res) {
+  try {
+    const data = await AppointmentService.getAllAppointments();
+    res.json(ok(data, 'Appointments fetched'));
+  } catch (e) {
+    console.error('Error fetching appointments:', e);
+    res.status(500).json(error('Failed to fetch appointments'));
+  }
+}
+
+async function updateStatus(req, res) {
+  const id = parseInt(req.params.id, 10);
+  const { status } = req.body || {};
+  if (!id) return res.status(400).json(error('Valid id is required'));
+  if (!status) return res.status(400).json(error('status is required'));
+  try {
+    const updated = await AppointmentService.updateAppointmentStatus(id, status);
+    if (!updated) return res.status(404).json(error('Appointment not found'));
+    res.json(ok(null, 'Appointment status updated'));
+  } catch (e) {
+    res.status(500).json(error('Failed to update appointment status'));
+  }
+}
+
+module.exports = { create, listByEvent, remove, getAll, updateStatus };

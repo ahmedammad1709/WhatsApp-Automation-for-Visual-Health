@@ -56,11 +56,26 @@ async function handleWebhook(req, res) {
     // Log incoming message to DB
     await WhatsAppService.logMessage(from, 'in', text);
 
-    // Process message
+    // Process message - try structured flow first, then ChatGPT
     let result;
     if (text && typeof text === 'string' && text.trim()) {
       console.log('[WEBHOOK] Processing message...');
-      result = await WhatsAppService.processUserMessage(from, text.trim());
+      
+      // Use structured flow for appointment booking
+      // ChatGPT is used within the flow for natural responses when needed
+      const state = await WhatsAppService.getState(from);
+      const currentStep = state ? state.current_step : 'start';
+      
+      // Always use structured flow for booking process
+      result = await WhatsAppService.handleIncomingMessage(from, text.trim());
+      
+      // If user wants to start booking and we're not in a flow, initiate it
+      if (currentStep === 'start' || !currentStep) {
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes('agendar') || lowerText.includes('marcar') || lowerText.includes('consulta') || lowerText.includes('appointment') || lowerText.includes('book') || lowerText.includes('hi') || lowerText.includes('hello') || lowerText.includes('olá') || lowerText.includes('oi')) {
+          result = await WhatsAppService.handleIncomingMessage(from, text.trim());
+        }
+      }
     } else {
       result = { type: 'text', text: 'Por favor, envie uma mensagem de texto.' };
     }
@@ -75,8 +90,9 @@ async function handleWebhook(req, res) {
         await WhatsAppService.sendOptions(from, result.title, result.options, PHONE_ID);
         await WhatsAppService.logMessage(from, 'out', result.title);
       } else if (result.type === 'final') {
-        await WhatsAppService.sendFinalConfirmation(from, result.appt, PHONE_ID);
-        await WhatsAppService.logMessage(from, 'out', 'Confirmação enviada');
+        const confirmationText = result.text || `Appointment confirmed for ${result.appointment?.slot_date} at ${result.appointment?.slot_time}`;
+        await WhatsAppService.sendText(from, confirmationText, PHONE_ID);
+        await WhatsAppService.logMessage(from, 'out', confirmationText);
       }
     }
 

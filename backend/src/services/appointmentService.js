@@ -6,11 +6,11 @@ async function createAppointment({ patient_id, event_id, time_slot_id, status })
     await conn.beginTransaction();
     const [result] = await conn.query(
       'INSERT INTO appointments (patient_id, event_id, time_slot_id, status, created_at) VALUES (?, ?, ?, ?, NOW())',
-      [patient_id, event_id, time_slot_id, status || 'reserved']
+      [patient_id, event_id, time_slot_id, status || 'scheduled']
     );
     await conn.query('UPDATE time_slots SET reserved_count = reserved_count + 1 WHERE id = ?', [time_slot_id]);
     await conn.commit();
-    return { id: result.insertId, patient_id, event_id, time_slot_id, status: status || 'reserved' };
+    return { id: result.insertId, patient_id, event_id, time_slot_id, status: status || 'scheduled' };
   } catch (e) {
     await conn.rollback();
     throw e;
@@ -61,4 +61,29 @@ async function deleteAppointment(id) {
   }
 }
 
-module.exports = { createAppointment, listAppointmentsByEvent, deleteAppointment };
+async function getAllAppointments() {
+  const [rows] = await pool.query(
+    `SELECT a.id, a.patient_id, a.event_id, a.time_slot_id, a.status, a.created_at,
+            p.full_name AS patient_name, p.whatsapp_number, p.city, p.neighborhood,
+            ts.slot_date, ts.slot_time,
+            e.location, e.start_date, e.end_date,
+            c.name AS city_name
+     FROM appointments a
+     LEFT JOIN patients p ON p.id = a.patient_id
+     LEFT JOIN time_slots ts ON ts.id = a.time_slot_id
+     LEFT JOIN events e ON e.id = a.event_id
+     LEFT JOIN cities c ON c.id = e.city_id
+     ORDER BY a.created_at DESC`
+  );
+  return rows;
+}
+
+async function updateAppointmentStatus(id, status) {
+  const [result] = await pool.query(
+    'UPDATE appointments SET status = ? WHERE id = ?',
+    [status, id]
+  );
+  return result.affectedRows > 0;
+}
+
+module.exports = { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus };

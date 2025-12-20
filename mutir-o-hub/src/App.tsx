@@ -7,6 +7,9 @@ import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import Cities from "./pages/Cities";
 import Appointments from "./pages/Appointments";
+import Patients from "./pages/Patients";
+import TimeSlots from "./pages/TimeSlots";
+import ConversationLogs from "./pages/ConversationLogs";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -27,6 +30,9 @@ const App = () => (
           <Route path="/events" element={<Events />} />
           <Route path="/cities" element={<Cities />} />
           <Route path="/appointments" element={<Appointments />} />
+          <Route path="/patients" element={<Patients />} />
+          <Route path="/time-slots" element={<TimeSlots />} />
+          <Route path="/conversation-logs" element={<ConversationLogs />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/login" element={<Login />} />

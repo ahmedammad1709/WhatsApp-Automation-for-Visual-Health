@@ -16,4 +16,11 @@ async function getPatientById(id) {
   return rows[0] || null;
 }
 
-module.exports = { createPatient, getPatientById };
+async function getAllPatients() {
+  const [rows] = await pool.query(
+    'SELECT id, full_name, whatsapp_number, city, neighborhood, reason, created_at FROM patients ORDER BY created_at DESC'
+  );
+  return rows;
+}
+
+module.exports = { createPatient, getPatientById, getAllPatients };

@@ -5,7 +5,9 @@ import {
   Users, 
   BarChart3, 
   Settings,
-  Activity
+  Activity,
+  Clock,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +19,9 @@ const menuItems = [
   { name: 'Cities', path: '/cities', icon: Activity },
   { name: 'Events', path: '/events', icon: Calendar },
   { name: 'Appointments', path: '/appointments', icon: Users },
+  { name: 'Patients', path: '/patients', icon: Users },
+  { name: 'Time Slots', path: '/time-slots', icon: Clock },
+  { name: 'Conversation Logs', path: '/conversation-logs', icon: MessageSquare },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];

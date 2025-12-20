@@ -42,6 +42,10 @@ app.use('/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/appointments', appointmentRoutes);
 
+const conversationLogRoutes = require('./routes/conversationLogRoutes');
+app.use('/api/conversation-logs', conversationLogRoutes);
+app.use('/conversation-logs', conversationLogRoutes);
+
 app.use('/', whatsappRoutes);
 
 module.exports = app;

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Filter, CheckCircle, Eye } from 'lucide-react';
-import { sampleAppointments, cities, leadSources } from '@/lib/sampleData';
+import { getAppointments, updateAppointmentStatus, getCities } from '@/lib/api';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -18,27 +19,57 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { toast } from 'sonner';
 
 // Purpose: Appointments queue management page
 // View, filter, and export appointment data
 
 export default function Appointments() {
-  const [appointments, setAppointments] = useState(sampleAppointments);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [cities, setCities] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     city: 'all',
-    leadSource: 'all',
     status: 'all',
   });
 
-  const handleMarkAttended = (id: string) => {
-    setAppointments(
-      appointments.map(apt =>
-        apt.id === id ? { ...apt, attended: true, status: 'attended' } : apt
-      )
-    );
-    toast.success('Appointment marked as attended');
+  useEffect(() => {
+    loadAppointments();
+    loadCities();
+  }, []);
+
+  const loadAppointments = async () => {
+    try {
+      setLoading(true);
+      const data = await getAppointments();
+      setAppointments(data);
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+      toast.error('Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCities = async () => {
+    try {
+      const data = await getCities();
+      const cityNames = [...new Set(data.map((c: any) => c.name))];
+      setCities(cityNames);
+    } catch (error) {
+      console.error('Error loading cities:', error);
+    }
+  };
+
+  const handleMarkAttended = async (id: string | number) => {
+    try {
+      await updateAppointmentStatus(id, 'completed');
+      await loadAppointments();
+      toast.success('Appointment marked as attended');
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      toast.error('Failed to update appointment');
+    }
   };
 
   const handleExport = () => {
@@ -47,35 +78,37 @@ export default function Appointments() {
   };
 
   const filteredAppointments = appointments.filter(apt => {
-    if (filters.city !== 'all' && apt.city !== filters.city) return false;
-    if (filters.leadSource !== 'all' && apt.leadSource !== filters.leadSource) return false;
+    if (filters.city !== 'all' && apt.city_name !== filters.city) return false;
     if (filters.status !== 'all' && apt.status !== filters.status) return false;
     return true;
   });
 
   const columns = [
-    { key: 'patientName', label: 'Patient Name' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'city', label: 'City' },
+    { key: 'patient_name', label: 'Patient Name' },
+    { key: 'whatsapp_number', label: 'Phone' },
+    { key: 'city_name', label: 'City' },
     { key: 'neighborhood', label: 'Neighborhood' },
-    { key: 'age', label: 'Age' },
     {
-      key: 'appointmentDate',
+      key: 'slot_date',
       label: 'Date',
-      render: (date: string) => new Date(date).toLocaleDateString('pt-BR'),
+      render: (date: string) => date ? new Date(date).toLocaleDateString('pt-BR') : '-',
     },
-    { key: 'appointmentTime', label: 'Time' },
+    {
+      key: 'slot_time',
+      label: 'Time',
+      render: (time: string) => time || '-',
+    },
+    { key: 'location', label: 'Location' },
     {
       key: 'status',
       label: 'Status',
       render: (status: string) => {
         const variants: any = {
-          confirmed: 'default',
-          pending: 'secondary',
+          scheduled: 'default',
+          completed: 'outline',
           cancelled: 'destructive',
-          attended: 'outline',
         };
-        return <Badge variant={variants[status]}>{status}</Badge>;
+        return <Badge variant={variants[status] || 'secondary'}>{status}</Badge>;
       },
     },
     {
@@ -90,13 +123,13 @@ export default function Appointments() {
           >
             <Eye className="w-4 h-4" />
           </Button>
-          {!row.attended && (
+          {row.status !== 'completed' && row.status !== 'cancelled' && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => handleMarkAttended(row.id)}
             >
-              <CheckCircle className="w-4 h-4 text-success" />
+              <CheckCircle className="w-4 h-4 text-green-600" />
             </Button>
           )}
         </div>
@@ -136,38 +169,29 @@ export default function Appointments() {
             </SelectContent>
           </Select>
 
-          <Select value={filters.leadSource} onValueChange={(v) => setFilters({ ...filters, leadSource: v })}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Sources" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              {leadSources.map(source => (
-                <SelectItem key={source} value={source}>{source}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <Select value={filters.status} onValueChange={(v) => setFilters({ ...filters, status: v })}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="attended">Attended</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Appointments Table */}
-        <DataTable
-          columns={columns}
-          data={filteredAppointments}
-          emptyMessage="No appointments match the selected filters"
-        />
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading appointments...</div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={filteredAppointments}
+            emptyMessage="No appointments match the selected filters"
+          />
+        )}
 
         {/* Appointment Details Sheet */}
         <Sheet open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
@@ -179,39 +203,39 @@ export default function Appointments() {
               <div className="mt-6 space-y-6">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Patient</h3>
-                  <p className="text-lg font-semibold">{selectedAppointment.patientName}</p>
+                  <p className="text-lg font-semibold">{selectedAppointment.patient_name}</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Phone</h3>
-                    <p>{selectedAppointment.phone}</p>
+                    <p>{selectedAppointment.whatsapp_number}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Age</h3>
-                    <p>{selectedAppointment.age} years</p>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">City</h3>
+                    <p>{selectedAppointment.city_name}</p>
                   </div>
                 </div>
                 
                 <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Neighborhood</h3>
+                  <p>{selectedAppointment.neighborhood || '-'}</p>
+                </div>
+                
+                <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Location</h3>
-                  <p>{selectedAppointment.neighborhood}, {selectedAppointment.city}</p>
+                  <p>{selectedAppointment.location}</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Date</h3>
-                    <p>{new Date(selectedAppointment.appointmentDate).toLocaleDateString('pt-BR')}</p>
+                    <p>{selectedAppointment.slot_date ? new Date(selectedAppointment.slot_date).toLocaleDateString('pt-BR') : '-'}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Time</h3>
-                    <p>{selectedAppointment.appointmentTime}</p>
+                    <p>{selectedAppointment.slot_time || '-'}</p>
                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Lead Source</h3>
-                  <Badge>{selectedAppointment.leadSource}</Badge>
                 </div>
                 
                 <div>
@@ -221,7 +245,7 @@ export default function Appointments() {
                 
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Created At</h3>
-                  <p className="text-sm">{selectedAppointment.createdAt}</p>
+                  <p className="text-sm">{selectedAppointment.created_at ? new Date(selectedAppointment.created_at).toLocaleString('pt-BR') : '-'}</p>
                 </div>
               </div>
             )}
