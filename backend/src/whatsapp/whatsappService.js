@@ -78,11 +78,42 @@ function normalize(text) {
     return text.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+// --- Name Sanitization Helper ---
+function sanitizeName(text) {
+    if (!text || typeof text !== 'string') return '';
+    
+    // Trim whitespace
+    let sanitized = text.trim();
+    
+    // Remove emojis and special characters (keep letters, spaces, hyphens, apostrophes)
+    sanitized = sanitized.replace(/[\u{1F600}-\u{1F64F}]/gu, ''); // Emoticons
+    sanitized = sanitized.replace(/[\u{1F300}-\u{1F5FF}]/gu, ''); // Misc Symbols
+    sanitized = sanitized.replace(/[\u{1F680}-\u{1F6FF}]/gu, ''); // Transport
+    sanitized = sanitized.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, ''); // Flags
+    sanitized = sanitized.replace(/[\u{2600}-\u{26FF}]/gu, ''); // Misc symbols
+    sanitized = sanitized.replace(/[\u{2700}-\u{27BF}]/gu, ''); // Dingbats
+    sanitized = sanitized.replace(/[^\p{L}\s\-']/gu, ''); // Keep only letters, spaces, hyphens, apostrophes
+    
+    // Normalize multiple spaces to single space
+    sanitized = sanitized.replace(/\s+/g, ' ');
+    
+    // Limit length to 100 characters
+    if (sanitized.length > 100) {
+        sanitized = sanitized.substring(0, 100).trim();
+    }
+    
+    // Final trim
+    sanitized = sanitized.trim();
+    
+    return sanitized;
+}
+
 // --- Main Flow Entry ---
 
 async function handleIncomingMessage(phone, text) {
   const cleanText = text.trim();
   const lowerText = normalize(cleanText);
+  let currentStep = null; // Declare outside try for error handler access
 
   try {
     // 1. Hard Reset Command
@@ -100,7 +131,9 @@ async function handleIncomingMessage(phone, text) {
     }
 
     // 3. Flow Logic
-    switch (session.step) {
+    currentStep = session.step; // Capture step before processing
+    
+    switch (currentStep) {
       case 'ASK_NAME':
         return await handleNameInput(phone, cleanText);
 
@@ -129,8 +162,21 @@ async function handleIncomingMessage(phone, text) {
 
   } catch (err) {
     console.error(`[FLOW ERROR] ${phone}:`, err);
+    console.error(`[FLOW ERROR] Stack trace:`, err.stack);
+    console.error(`[FLOW ERROR] Error occurred at step: ${currentStep || 'unknown'}`);
+    
+    // CRITICAL: Do NOT delete session if error happens at ASK_NAME
+    // Instead, ask for name again politely
+    if (currentStep === 'ASK_NAME') {
+      console.log(`[FLOW ERROR] Error at ASK_NAME step - NOT deleting session, asking for name again`);
+      return { type: 'text', text: 'I didn\'t quite catch that. Could you please tell me your full name? 😊' };
+    }
+    
+    // For other steps, delete session and start over
+    // This is allowed for: booking completed, session_version mismatch (handled in getSession),
+    // and other fatal errors
     await resetSession(phone);
-    return { type: 'text', text: 'Oops! Something went wrong. Let’s start over. 😊 Type "start" or just tell me your name to begin.' };
+    return { type: 'text', text: 'Oops! Something went wrong. Let\'s start over. 😊 Type "start" or just tell me your name to begin.' };
   }
 }
 
@@ -145,44 +191,53 @@ async function startFlow(phone) {
 }
 
 async function handleNameInput(phone, text) {
-    try {
-        console.log(`[HANDLE NAME] Processing name input for ${phone}: ${text}`);
-        if (text.length < 2) {
-            return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
-        }
+    // DEBUG LOGGING
+    console.log(`[HANDLE NAME] Processing name input for ${phone}`);
+    console.log(`[HANDLE NAME] Incoming text: "${text}"`);
+    
+    // Get session before update for logging
+    const sessionBefore = await getSession(phone);
+    const stepBefore = sessionBefore ? sessionBefore.step : 'none';
+    console.log(`[HANDLE NAME] Session step before: ${stepBefore}`);
 
-        // Save Name -> Ask City
-        // We can fetch cities to show as options or just ask.
-        // Flow says: "Ask politely for full name... Move to ASK_CITY"
-        // Does ASK_CITY show a list?
-        // "ASK_CITY... Store each input... Do not write to database yet."
-        // Usually cities are a fixed list. I will show them for better UX.
-        
-        const [cities] = await pool.query('SELECT id, name FROM cities ORDER BY name');
-        if (cities.length === 0) {
-            console.error('[HANDLE NAME] No cities found in DB');
-            throw new Error('No cities configured in system.');
-        }
-
-        console.log(`[HANDLE NAME] Updating session for ${phone}`);
-        await updateSession(phone, { step: 'ASK_CITY', full_name: text });
-
-        // Limit to 10 cities to avoid WhatsApp List message limit
-        const options = cities.slice(0, 10).map(c => ({
-            id: String(c.id), // ID for internal, but we match text
-            title: c.name
-        }));
-
-        console.log(`[HANDLE NAME] Returning options for ${phone}`);
-        return {
-            type: 'options',
-            title: `Thanks, ${text}! 😊 Now, please select your city:`,
-            options
-        };
-    } catch (e) {
-        console.error(`[HANDLE NAME ERROR] ${phone}:`, e);
-        throw e;
+    // Handle greetings - treat as reminder to provide name
+    const lowerText = normalize(text);
+    const greetings = ['hi', 'hello', 'ola', 'olá', 'hey', 'hola'];
+    if (greetings.includes(lowerText)) {
+        return { type: 'text', text: 'Hi there! 😊 Could you please tell me your full name?' };
     }
+
+    // Validate minimum length
+    if (!text || text.trim().length < 2) {
+        return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
+    }
+
+    // Sanitize name (trim, remove emojis, limit length)
+    // This function never throws - it always returns a string (possibly empty)
+    const sanitizedName = sanitizeName(text);
+    
+    if (!sanitizedName || sanitizedName.length < 2) {
+        return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
+    }
+
+    console.log(`[HANDLE NAME] Sanitized name: "${sanitizedName}"`);
+
+    // Save name and transition to ASK_CITY
+    // NO DB JOINS, NO COMPLEX QUERIES, NO EXCEPTIONS
+    // updateSession is a simple UPDATE query - if it fails, let error handler catch it
+    await updateSession(phone, { step: 'ASK_CITY', full_name: sanitizedName });
+
+    // Verify step was updated (for debugging only)
+    const sessionAfter = await getSession(phone);
+    const stepAfter = sessionAfter ? sessionAfter.step : 'none';
+    console.log(`[HANDLE NAME] Session step after: ${stepAfter}`);
+    console.log(`[HANDLE NAME] DB update successful, saved name: "${sanitizedName}"`);
+
+    // Extract first name for personalized response
+    const firstName = sanitizedName.split(' ')[0];
+
+    // Return simple text response asking for city
+    return { type: 'text', text: `Thanks, ${firstName}! 😊 Which city are you in?` };
 }
 
 async function handleCityInput(phone, text) {
