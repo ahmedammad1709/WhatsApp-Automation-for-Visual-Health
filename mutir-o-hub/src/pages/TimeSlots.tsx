@@ -37,7 +37,7 @@ export default function TimeSlots() {
     {
       key: 'slot_time',
       label: 'Time',
-      render: (time: string) => time || '-',
+      render: (time: string) => time ? time.slice(0, 5) : '-',
     },
     { key: 'max_per_slot', label: 'Max Capacity' },
     { key: 'reserved_count', label: 'Reserved' },

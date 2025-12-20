@@ -14,14 +14,15 @@ async function list(req, res) {
 }
 
 async function create(req, res) {
-  const { city_id, location, start_date, end_date, max_capacity, notes } = req.body || {};
+  const { city_id, location, start_date, end_date, max_capacity, notes, startTime, endTime } = req.body || {};
   if (!city_id || !location || !start_date || !end_date || !max_capacity) {
     return res.status(400).json(error('city_id, location, start_date, end_date, max_capacity are required'));
   }
   try {
-    const created = await EventService.createEvent({ city_id, location, start_date, end_date, max_capacity, notes });
+    const created = await EventService.createEvent({ city_id, location, start_date, end_date, max_capacity, notes, startTime, endTime });
     res.status(201).json(ok(created, 'Event created'));
   } catch (e) {
+    console.error('Error creating event:', e);
     res.status(500).json(error('Failed to create event'));
   }
 }

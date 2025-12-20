@@ -75,6 +75,8 @@ export default function Events() {
       end_date: String(form.get('end_date')),
       max_capacity: Number(form.get('max_capacity')),
       notes: String(form.get('notes') || ''),
+      startTime: String(form.get('startTime')),
+      endTime: String(form.get('endTime')),
     };
     const created = await createEvent(payload);
     setEvents([created, ...events]);
@@ -162,6 +164,28 @@ export default function Events() {
                   <div className="space-y-2">
                     <Label htmlFor="end_date">End Date</Label>
                     <Input id="end_date" name="end_date" type="date" defaultValue={formatDate(editingEvent?.end_date)} required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">Start Time (e.g. 09:00 AM)</Label>
+                    <Input
+                      id="startTime"
+                      name="startTime"
+                      type="text"
+                      placeholder="09:00 AM"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime">End Time (e.g. 05:00 PM)</Label>
+                    <Input
+                      id="endTime"
+                      name="endTime"
+                      type="text"
+                      placeholder="05:00 PM"
+                      required
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
