@@ -1,8 +1,19 @@
 const pool = require('../config/db');
 const Sender = require('./sendMessage');
 const BookingService = require('../services/bookingService');
+const ChatGptService = require('../services/chatgptService');
 
 const CURRENT_SESSION_VERSION = 3;
+
+// --- Helper for Conversation History ---
+async function getConversationHistory(phone, limit = 20) {
+    const [rows] = await pool.query(
+        'SELECT direction, message FROM conversation_logs WHERE whatsapp_number = ? ORDER BY created_at DESC LIMIT ?',
+        [phone, limit]
+    );
+    // Reverse to chronological order
+    return rows.reverse();
+}
 
 // --- Session Management ---
 
@@ -213,66 +224,49 @@ async function startFlow(phone) {
 }
 
 async function handleNameInput(phone, text) {
-    // DEBUG LOGGING
-    console.log(`[HANDLE NAME] Processing name input for ${phone}`);
-    console.log(`[HANDLE NAME] Incoming text: "${text}"`);
+    console.log(`[HANDLE NAME] Processing name input for ${phone}: "${text}"`);
     
-    // Get session before update for logging
-    const sessionBefore = await getSession(phone);
-    const stepBefore = sessionBefore ? sessionBefore.step : 'none';
-    console.log(`[HANDLE NAME] Session step before: ${stepBefore}`);
+    // GPT Analysis
+    const analysis = await ChatGptService.analyzeInput(text, 'ASK_NAME');
+    console.log(`[HANDLE NAME] GPT Analysis:`, JSON.stringify(analysis));
 
-    // Handle greetings - treat as reminder to provide name
-    const lowerText = normalize(text);
-    const greetings = ['hi', 'hello', 'ola', 'olá', 'hey', 'hola'];
-    if (greetings.includes(lowerText)) {
-        return { type: 'text', text: 'Hi there! 😊 Could you please tell me your full name?' };
+    if (analysis.classification === 'restart') {
+        await resetSession(phone);
+        await createSession(phone);
+        return await startFlow(phone);
     }
 
-    // Validate minimum length
-    if (!text || text.trim().length < 2) {
+    if (analysis.classification === 'off_topic') {
+        // Reply with GPT's polite nudge and stay on same step
+        return { type: 'text', text: analysis.reply || 'Could you please tell me your full name?' };
+    }
+
+    // Use cleaned value if valid, otherwise fallback to sanitized text
+    let nameToSave = analysis.cleaned_value;
+    if (!nameToSave || nameToSave.length < 2) {
+         nameToSave = sanitizeName(text);
+    }
+    
+    if (!nameToSave || nameToSave.length < 2) {
         return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
     }
 
-    // Sanitize name (trim, remove emojis, limit length)
-    // This function never throws - it always returns a string (possibly empty)
-    const sanitizedName = sanitizeName(text);
-    
-    if (!sanitizedName || sanitizedName.length < 2) {
-        return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
-    }
+    await updateSession(phone, { step: 'ASK_CITY', full_name: nameToSave });
 
-    console.log(`[HANDLE NAME] Sanitized name: "${sanitizedName}"`);
-
-    // Save name and transition to ASK_CITY
-    // NO DB JOINS, NO COMPLEX QUERIES, NO EXCEPTIONS
-    // updateSession is a simple UPDATE query - if it fails, let error handler catch it
-    await updateSession(phone, { step: 'ASK_CITY', full_name: sanitizedName });
-
-    // Verify step was updated (for debugging only)
-    const sessionAfter = await getSession(phone);
-    const stepAfter = sessionAfter ? sessionAfter.step : 'none';
-    console.log(`[HANDLE NAME] Session step after: ${stepAfter}`);
-    console.log(`[HANDLE NAME] DB update successful, saved name: "${sanitizedName}"`);
-
-    // Extract first name for personalized response
-    const firstName = sanitizedName.split(' ')[0];
-
+    const firstName = nameToSave.split(' ')[0];
     const [cities] = await pool.query('SELECT id, name FROM cities');
+    
     if (cities.length === 0) {
-        console.error('[HANDLE NAME] No cities found in DB');
         return { type: 'text', text: 'We are currently updating our service areas. Please try again later! (Error: No cities configured)' };
     }
+    
     const options = cities.map(c => ({ id: String(c.id), title: c.name }));
-
-    console.log(`[HANDLE NAME] Returning options for ${phone}`);
     return {
         type: 'options',
         header: 'Select City',
         body: `Thanks, ${firstName}! 😊 Now, please select your city:`,
         options
     };
-
 }
 
 async function handleCityInput(phone, text) {
@@ -295,19 +289,48 @@ async function handleCityInput(phone, text) {
 }
 
 async function handleNeighborhoodInput(phone, text) {
-    if (text.length < 2) {
+    // GPT Analysis
+    const analysis = await ChatGptService.analyzeInput(text, 'ASK_NEIGHBORHOOD');
+
+    if (analysis.classification === 'restart') {
+        await resetSession(phone);
+        await createSession(phone);
+        return await startFlow(phone);
+    }
+
+    if (analysis.classification === 'off_topic') {
+        return { type: 'text', text: analysis.reply || 'Which neighborhood do you live in?' };
+    }
+
+    const neighborhood = analysis.cleaned_value || text.trim();
+
+    if (neighborhood.length < 2) {
         return { type: 'text', text: 'Please enter a valid neighborhood name.' };
     }
 
-    await updateSession(phone, { step: 'ASK_REASON', neighborhood: text });
+    await updateSession(phone, { step: 'ASK_REASON', neighborhood });
     return { type: 'text', text: 'Got it. What is the reason for your appointment? (e.g., Eye Exam, Cataract Surgery)' };
 }
 
 async function handleReasonInput(phone, text, session) {
-    // 1. Save Reason
-    // 2. Fetch Events
-    // 3. Build Text Map
-    // 4. Show Events
+    // GPT Analysis
+    const analysis = await ChatGptService.analyzeInput(text, 'ASK_REASON');
+
+    if (analysis.classification === 'restart') {
+        await resetSession(phone);
+        await createSession(phone);
+        return await startFlow(phone);
+    }
+
+    if (analysis.classification === 'off_topic') {
+        return { type: 'text', text: analysis.reply || 'Could you please briefly describe the reason for your appointment?' };
+    }
+
+    const reason = analysis.cleaned_value || text.trim();
+
+    // 1. Fetch Events
+    // 2. Build Text Map
+    // 3. Show Events
 
     const [cities] = await pool.query('SELECT id FROM cities WHERE name = ?', [session.city]);
     if (cities.length === 0) throw new Error('City lost from DB');
@@ -319,18 +342,7 @@ async function handleReasonInput(phone, text, session) {
     );
 
     if (events.length === 0) {
-        // Polite exit? Or wait?
-        // User says: "Be polite, Be forgiving".
-        // If no events, we can't proceed.
         return { type: 'text', text: `I'm sorry, we don't have any upcoming events in ${session.city} right now. Please check back later! (Type "start" to try another city)` };
-        // We don't reset here, we let them type start or maybe they want to wait?
-        // Actually, if they type anything else, it will come back here? 
-        // No, step is still ASK_REASON. They can change reason?
-        // Let's keep them at ASK_REASON but give feedback.
-        // Or maybe reset?
-        // Let's reset to be safe against loops.
-        // await resetSession(phone);
-        // return { type: 'text', text: ... }
     }
 
     // Build Map
@@ -338,11 +350,7 @@ async function handleReasonInput(phone, text, session) {
     const options = events.map(e => {
         const dateRange = `${new Date(e.start_date).toLocaleDateString()} - ${new Date(e.end_date).toLocaleDateString()}`;
         const displayText = `${e.location}\n${dateRange}`;
-        const normalizedText = normalize(`${e.location} ${dateRange}`); // Normalize for matching
-        
-        // Also match just location if unique?
-        // For strictness, let's match the full display text or location.
-        // Let's add multiple normalized variations if we want to be fancy, but let's stick to the generated display text normalized.
+        const normalizedText = normalize(`${e.location} ${dateRange}`);
         
         eventTextMap.push({
             event_id: e.id,
@@ -361,7 +369,7 @@ async function handleReasonInput(phone, text, session) {
     // Save map to session
     await updateSession(phone, { 
         step: 'SHOW_EVENTS', 
-        reason: text,
+        reason: reason,
         metadata: { ...session.metadata, event_text_map: eventTextMap }
     });
 
@@ -456,12 +464,29 @@ async function handleSlotSelection(phone, text, session) {
 
     // Booking Transaction
     try {
+        // --- Intelligent Data Extraction ---
+        console.log(`[BOOKING] Extracting final patient data for ${phone}`);
+        const history = await getConversationHistory(phone, 30); // Get last 30 messages
+        const extractedData = await ChatGptService.extractPatientData(history);
+        
+        console.log(`[BOOKING] Extracted Data:`, JSON.stringify(extractedData));
+
+        const finalName = extractedData.full_name || session.full_name;
+        const finalNeighborhood = extractedData.neighborhood || session.neighborhood;
+        const finalReason = extractedData.reason_for_visit || session.reason;
+        
+        // Use preferred name if available
+        let displayName = finalName;
+        if (extractedData.preferred_name) {
+             displayName = `${finalName} (${extractedData.preferred_name})`;
+        }
+
         const result = await BookingService.bookSlot({
             whatsapp_number: phone,
-            full_name: session.full_name,
+            full_name: displayName,
             city: session.city,
-            neighborhood: session.neighborhood,
-            reason: session.reason,
+            neighborhood: finalNeighborhood,
+            reason: finalReason,
             event_id: session.event_id,
             time_slot_id: slotId
         });
@@ -470,9 +495,7 @@ async function handleSlotSelection(phone, text, session) {
         await resetSession(phone);
 
         // Confirmation Message
-        // "All set, Ammad! 😊 Your appointment is confirmed for 14 Jan at 07:30 AM at UBS CENTRAL. We look forward to seeing you!"
-        
-        const confirmMsg = `All set, ${session.full_name}! 😊\nYour appointment is confirmed for ${new Date(result.slot_date).toLocaleDateString()} at ${result.slot_time.substring(0, 5)} at ${result.location}.\nWe look forward to seeing you!`;
+        const confirmMsg = `All set, ${extractedData.preferred_name || finalName}! 😊\nYour appointment is confirmed for ${new Date(result.slot_date).toLocaleDateString()} at ${result.slot_time.substring(0, 5)} at ${result.location}.\nWe look forward to seeing you!`;
 
         return {
             type: 'final',
@@ -482,13 +505,6 @@ async function handleSlotSelection(phone, text, session) {
     } catch (e) {
         if (e.message === 'SLOT_FULL') {
             return { type: 'text', text: 'Ah, that slot was just taken by someone else! 😅 Please choose another one.' };
-            // They stay at SHOW_TIME_SLOTS?
-            // Yes, but we should probably refresh the list?
-            // The list is in metadata. It might contain the taken slot.
-            // Ideally we re-fetch.
-            // But for now, letting them pick another from existing list (if others exist) or type "start" is okay.
-            // Better UX: Re-run handleEventSelection logic to refresh slots?
-            // Let's just ask them to pick another.
         }
         if (e.message === 'ALREADY_BOOKED') {
             await resetSession(phone);
