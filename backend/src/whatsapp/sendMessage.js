@@ -66,7 +66,7 @@ async function sendText(phone, text, phoneOverride) {
   return postMessage('messages', body, phoneOverride);
 }
 
-async function sendOptions(phone, title, options, phoneOverride) {
+async function sendOptions(phone, headerText, bodyText, options, phoneOverride) {
   const rows = (options || []).map((o, idx) => ({ id: o.id || String(idx + 1), title: o.title, description: o.description || '' }));
   const body = {
     messaging_product: 'whatsapp',
@@ -74,8 +74,8 @@ async function sendOptions(phone, title, options, phoneOverride) {
     type: 'interactive',
     interactive: {
       type: 'list',
-      header: { type: 'text', text: title },
-      body: { text: title },
+      header: { type: 'text', text: headerText || 'Opções' },
+      body: { text: bodyText || 'Selecione uma opção' },
       footer: { text: 'Selecione uma opção' },
       action: { button: 'Selecionar', sections: [{ title: 'Opções', rows }] }
     }

@@ -101,8 +101,9 @@ async function handleWebhook(req, res) {
           await WhatsAppService.sendText(from, result.text, PHONE_ID);
           await WhatsAppService.logMessage(from, 'out', result.text);
         } else if (result.type === 'options') {
-          await WhatsAppService.sendOptions(from, result.title, result.options, PHONE_ID);
-          await WhatsAppService.logMessage(from, 'out', result.title);
+          // Supports header, body, and title (legacy)
+          await WhatsAppService.sendOptions(from, result.header || result.title, result.body || result.title, result.options, PHONE_ID);
+          await WhatsAppService.logMessage(from, 'out', result.body || result.title);
         } else if (result.type === 'final') {
           const confirmationText = result.text || `Appointment confirmed for ${result.appointment?.slot_date} at ${result.appointment?.slot_time}`;
           await WhatsAppService.sendText(from, confirmationText, PHONE_ID);

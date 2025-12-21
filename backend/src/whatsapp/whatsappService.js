@@ -119,6 +119,8 @@ async function handleIncomingMessage(phone, text) {
     // 1. Hard Reset Command
     if (lowerText === 'start') {
       await resetSession(phone);
+      // Ensure session is created immediately so next input is handled correctly
+      await createSession(phone);
       return await startFlow(phone);
     }
 
@@ -236,8 +238,17 @@ async function handleNameInput(phone, text) {
     // Extract first name for personalized response
     const firstName = sanitizedName.split(' ')[0];
 
-    // Return simple text response asking for city
-    return { type: 'text', text: `Thanks, ${firstName}! 😊 Which city are you in?` };
+    const [cities] = await pool.query('SELECT id, name FROM cities');
+    const options = cities.map(c => ({ id: String(c.id), title: c.name }));
+
+    console.log(`[HANDLE NAME] Returning options for ${phone}`);
+    return {
+        type: 'options',
+        header: 'Select City',
+        body: `Thanks, ${firstName}! 😊 Now, please select your city:`,
+        options
+    };
+
 }
 
 async function handleCityInput(phone, text) {
@@ -332,7 +343,8 @@ async function handleReasonInput(phone, text, session) {
 
     return {
         type: 'options',
-        title: 'Please select an event location:',
+        header: 'Select Event',
+        body: 'Please select an event location:',
         options
     };
 }
@@ -396,7 +408,8 @@ async function handleEventSelection(phone, text, session) {
 
     return {
         type: 'options',
-        title: 'Great! Here are the available time slots. Please pick one:',
+        header: 'Select Time',
+        body: 'Great! Here are the available time slots. Please pick one:',
         options
     };
 }
