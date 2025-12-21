@@ -38,16 +38,36 @@ async function getSession(phone) {
 
 async function createSession(phone) {
   console.log(`[SESSION] Creating new session for ${phone}`);
-  await pool.query(
-    'INSERT INTO whatsapp_sessions (whatsapp_number, step, session_version, metadata) VALUES (?, ?, ?, ?)',
-    [phone, 'ASK_NAME', CURRENT_SESSION_VERSION, JSON.stringify({})]
-  );
+  try {
+      await pool.query(
+        'INSERT INTO whatsapp_sessions (whatsapp_number, step, session_version, metadata) VALUES (?, ?, ?, ?)',
+        [phone, 'ASK_NAME', CURRENT_SESSION_VERSION, JSON.stringify({})]
+      );
+  } catch (e) {
+      if (e.code === 'ER_DUP_ENTRY') {
+          console.warn(`[SESSION] Duplicate found for ${phone} during create. Forcing reset and retry.`);
+          await resetSession(phone);
+          // Retry once
+          await pool.query(
+            'INSERT INTO whatsapp_sessions (whatsapp_number, step, session_version, metadata) VALUES (?, ?, ?, ?)',
+            [phone, 'ASK_NAME', CURRENT_SESSION_VERSION, JSON.stringify({})]
+          );
+      } else {
+          throw e;
+      }
+  }
   return { whatsapp_number: phone, step: 'ASK_NAME', metadata: {} };
 }
 
 async function resetSession(phone) {
-  console.log(`[SESSION] Hard reset for ${phone}`);
-  await pool.query('DELETE FROM whatsapp_sessions WHERE whatsapp_number = ?', [phone]);
+  console.log(`[SESSION] Hard reset requested for ${phone}`);
+  try {
+      const [result] = await pool.query('DELETE FROM whatsapp_sessions WHERE whatsapp_number = ?', [phone]);
+      console.log(`[SESSION] Reset complete for ${phone}. Affected rows: ${result.affectedRows}`);
+  } catch (e) {
+      console.error(`[SESSION] Reset failed for ${phone}:`, e);
+      throw e;
+  }
 }
 
 async function updateSession(phone, updates) {
@@ -239,6 +259,10 @@ async function handleNameInput(phone, text) {
     const firstName = sanitizedName.split(' ')[0];
 
     const [cities] = await pool.query('SELECT id, name FROM cities');
+    if (cities.length === 0) {
+        console.error('[HANDLE NAME] No cities found in DB');
+        return { type: 'text', text: 'We are currently updating our service areas. Please try again later! (Error: No cities configured)' };
+    }
     const options = cities.map(c => ({ id: String(c.id), title: c.name }));
 
     console.log(`[HANDLE NAME] Returning options for ${phone}`);
@@ -497,9 +521,9 @@ async function sendText(phone, text, phoneId) {
     }
 }
 
-async function sendOptions(phone, title, options, phoneId) {
+async function sendOptions(phone, headerText, bodyText, options, phoneOverride) {
     try {
-        await Sender.sendOptions(phone, title, options, phoneId);
+        await Sender.sendOptions(phone, headerText, bodyText, options, phoneOverride);
     } catch (e) {
         console.error('[SEND ERROR] Failed to send options:', e);
         throw e;
