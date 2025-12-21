@@ -1,10 +1,9 @@
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 require('dotenv').config();
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 const SYSTEM_PROMPT = `
 You are a smart, empathetic, and professional assistant for "Instituto Luz no Caminho", a visual health clinic.
@@ -49,18 +48,17 @@ async function analyzeInput(text, step) {
       }
     `;
 
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ],
       model: 'gpt-3.5-turbo',
       temperature: 0.3,
-      // response_format not supported in v3.x natively like this, need prompt engineering or upgrade
-      // For v3, we rely on prompt instruction "Output JSON ONLY"
+      response_format: { type: "json_object" }
     });
 
-    const content = completion.data.choices[0].message.content;
+    const content = completion.choices[0].message.content;
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleanContent);
     return result;
@@ -101,16 +99,17 @@ async function extractPatientData(history) {
       Output JSON ONLY.
     `;
 
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ],
       model: 'gpt-3.5-turbo',
       temperature: 0.1,
+      response_format: { type: "json_object" }
     });
 
-    const content = completion.data.choices[0].message.content;
+    const content = completion.choices[0].message.content;
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanContent);
 
