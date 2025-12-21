@@ -1,9 +1,10 @@
-const OpenAI = require('openai');
+const { Configuration, OpenAIApi } = require('openai');
 require('dotenv').config();
 
-const openai = new OpenAI({
+const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
+const openai = new OpenAIApi(configuration);
 
 const SYSTEM_PROMPT = `
 You are a smart, empathetic, and professional assistant for "Instituto Luz no Caminho", a visual health clinic.
@@ -48,17 +49,18 @@ async function analyzeInput(text, step) {
       }
     `;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openai.createChatCompletion({
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ],
-      model: 'gpt-3.5-turbo', // or gpt-4 if available/needed
+      model: 'gpt-3.5-turbo',
       temperature: 0.3,
-      response_format: { type: "json_object" }
+      // response_format not supported in v3.x natively like this, need prompt engineering or upgrade
+      // For v3, we rely on prompt instruction "Output JSON ONLY"
     });
 
-    const content = completion.choices[0].message.content;
+    const content = completion.data.choices[0].message.content;
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleanContent);
     return result;
@@ -99,17 +101,16 @@ async function extractPatientData(history) {
       Output JSON ONLY.
     `;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openai.createChatCompletion({
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ],
       model: 'gpt-3.5-turbo',
       temperature: 0.1,
-      response_format: { type: "json_object" }
     });
 
-    const content = completion.choices[0].message.content;
+    const content = completion.data.choices[0].message.content;
     const cleanContent = content.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanContent);
 
