@@ -160,7 +160,7 @@ async function handleIncomingMessage(phone, text) {
     if (!session) {
       session = await createSession(phone);
       // If we just created it, we are at ASK_NAME, so we should prompt for name.
-      return { type: 'text', text: 'Hi there! 😊 Welcome to Visual Health. Before we continue, may I have your full name?' };
+      return { type: 'text', text: 'Olá! 😊 Bem-vindo ao Instituto Luz no Caminho. Antes de continuarmos, qual é o seu nome completo?' };
     }
 
     // 3. Flow Logic
@@ -187,7 +187,7 @@ async function handleIncomingMessage(phone, text) {
       
       case 'CONFIRM_AND_BOOK':
         // Should not be here if session is deleted, but just in case
-        return { type: 'text', text: 'You have already booked. Type "start" to book again.' };
+        return { type: 'text', text: 'Você já realizou seu agendamento. Digite "start" para agendar novamente.' };
       
       default:
         throw new Error(`Invalid step: ${session.step}`);
@@ -202,14 +202,14 @@ async function handleIncomingMessage(phone, text) {
     // Instead, ask for name again politely
     if (currentStep === 'ASK_NAME') {
       console.log(`[FLOW ERROR] Error at ASK_NAME step - NOT deleting session, asking for name again`);
-      return { type: 'text', text: 'I didn\'t quite catch that. Could you please tell me your full name? 😊' };
+      return { type: 'text', text: 'Desculpe, não entendi. Poderia me informar seu nome completo? 😊' };
     }
     
     // For other steps, delete session and start over
     // This is allowed for: booking completed, session_version mismatch (handled in getSession),
     // and other fatal errors
     await resetSession(phone);
-    return { type: 'text', text: 'Oops! Something went wrong. Let\'s start over. 😊 Type "start" or just tell me your name to begin.' };
+    return { type: 'text', text: 'Ops! Algo deu errado. Vamos começar de novo. 😊 Digite "start" ou apenas me diga seu nome para iniciar.' };
   }
 }
 
@@ -220,7 +220,7 @@ async function startFlow(phone) {
     // We need to return the first prompt.
     // Note: handleIncomingMessage calls this if 'start' or new session.
     // If 'start' was typed, we reset and return this.
-    return { type: 'text', text: 'Hi there! 😊 Welcome to Visual Health. Before we continue, may I have your full name?' };
+    return { type: 'text', text: 'Olá! 😊 Bem-vindo ao Instituto Luz no Caminho. Antes de continuarmos, qual é o seu nome completo?' };
 }
 
 async function handleNameInput(phone, text) {
@@ -238,7 +238,7 @@ async function handleNameInput(phone, text) {
 
     if (analysis.classification === 'off_topic') {
         // Reply with GPT's polite nudge and stay on same step
-        return { type: 'text', text: analysis.reply || 'Could you please tell me your full name?' };
+        return { type: 'text', text: analysis.reply || 'Poderia me informar seu nome completo?' };
     }
 
     // Use cleaned value if valid, otherwise fallback to sanitized text
@@ -248,7 +248,7 @@ async function handleNameInput(phone, text) {
     }
     
     if (!nameToSave || nameToSave.length < 2) {
-        return { type: 'text', text: 'Could you please provide your full name? It helps us identify you. 😊' };
+        return { type: 'text', text: 'Poderia fornecer seu nome completo? Isso nos ajuda a identificar você. 😊' };
     }
 
     await updateSession(phone, { step: 'ASK_CITY', full_name: nameToSave });
@@ -257,14 +257,14 @@ async function handleNameInput(phone, text) {
     const [cities] = await pool.query('SELECT id, name FROM cities');
     
     if (cities.length === 0) {
-        return { type: 'text', text: 'We are currently updating our service areas. Please try again later! (Error: No cities configured)' };
+        return { type: 'text', text: 'Estamos atualizando nossas áreas de atendimento. Por favor, tente novamente mais tarde! (Erro: Nenhuma cidade configurada)' };
     }
     
     const options = cities.map(c => ({ id: String(c.id), title: c.name }));
     return {
         type: 'options',
-        header: 'Select City',
-        body: `Thanks, ${firstName}! 😊 Now, please select your city:`,
+        header: 'Selecione a Cidade',
+        body: `Obrigado, ${firstName}! 😊 Agora, por favor, selecione sua cidade:`,
         options
     };
 }
@@ -280,12 +280,12 @@ async function handleCityInput(phone, text) {
     );
 
     if (!selectedCity) {
-        return { type: 'text', text: 'I couldn\'t find that city. Please select one from the list or type it exactly. 😊' };
+        return { type: 'text', text: 'Não encontrei essa cidade. Por favor, selecione uma da lista ou digite exatamente como está. 😊' };
     }
 
     await updateSession(phone, { step: 'ASK_NEIGHBORHOOD', city: selectedCity.name });
 
-    return { type: 'text', text: `Great! ${selectedCity.name}. Now, which neighborhood do you live in?` };
+    return { type: 'text', text: `Ótimo! ${selectedCity.name}. Agora, em qual bairro você mora?` };
 }
 
 async function handleNeighborhoodInput(phone, text) {
@@ -299,17 +299,17 @@ async function handleNeighborhoodInput(phone, text) {
     }
 
     if (analysis.classification === 'off_topic') {
-        return { type: 'text', text: analysis.reply || 'Which neighborhood do you live in?' };
+        return { type: 'text', text: analysis.reply || 'Em qual bairro você mora?' };
     }
 
     const neighborhood = analysis.cleaned_value || text.trim();
 
     if (neighborhood.length < 2) {
-        return { type: 'text', text: 'Please enter a valid neighborhood name.' };
+        return { type: 'text', text: 'Por favor, digite um nome de bairro válido.' };
     }
 
     await updateSession(phone, { step: 'ASK_REASON', neighborhood });
-    return { type: 'text', text: 'Got it. What is the reason for your appointment? (e.g., Eye Exam, Cataract Surgery)' };
+    return { type: 'text', text: 'Entendi. Qual é o motivo da sua consulta? (ex: Exame de vista, Cirurgia de catarata)' };
 }
 
 async function handleReasonInput(phone, text, session) {
@@ -323,7 +323,7 @@ async function handleReasonInput(phone, text, session) {
     }
 
     if (analysis.classification === 'off_topic') {
-        return { type: 'text', text: analysis.reply || 'Could you please briefly describe the reason for your appointment?' };
+        return { type: 'text', text: analysis.reply || 'Poderia descrever brevemente o motivo da sua consulta?' };
     }
 
     const reason = analysis.cleaned_value || text.trim();
@@ -342,13 +342,13 @@ async function handleReasonInput(phone, text, session) {
     );
 
     if (events.length === 0) {
-        return { type: 'text', text: `I'm sorry, we don't have any upcoming events in ${session.city} right now. Please check back later! (Type "start" to try another city)` };
+        return { type: 'text', text: `Desculpe, não temos eventos agendados em ${session.city} no momento. Por favor, verifique mais tarde! (Digite "start" para tentar outra cidade)` };
     }
 
     // Build Map
     const eventTextMap = [];
     const options = events.map(e => {
-        const dateRange = `${new Date(e.start_date).toLocaleDateString()} - ${new Date(e.end_date).toLocaleDateString()}`;
+        const dateRange = `${new Date(e.start_date).toLocaleDateString('pt-BR')} - ${new Date(e.end_date).toLocaleDateString('pt-BR')}`;
         const displayText = `${e.location}\n${dateRange}`;
         const normalizedText = normalize(`${e.location} ${dateRange}`);
         
@@ -375,8 +375,8 @@ async function handleReasonInput(phone, text, session) {
 
     return {
         type: 'options',
-        header: 'Select Event',
-        body: 'Please select an event location:',
+        header: 'Selecione o Local',
+        body: 'Por favor, selecione um local de atendimento:',
         options
     };
 }
@@ -394,7 +394,7 @@ async function handleEventSelection(phone, text, session) {
 
     if (!match) {
         // "Politely ask user to tap again (do NOT say 'invalid' harshly)"
-        return { type: 'text', text: 'I didn\'t catch that. Could you please tap on one of the event options above? 😊' };
+        return { type: 'text', text: 'Não entendi. Poderia selecionar uma das opções de local acima? 😊' };
     }
 
     const eventId = match.event_id;
@@ -406,7 +406,7 @@ async function handleEventSelection(phone, text, session) {
     );
 
     if (slots.length === 0) {
-         return { type: 'text', text: 'Oh no! It looks like all slots for this event are fully booked. 😔 Please select a different event or check back later.' };
+         return { type: 'text', text: 'Ah, não! Parece que todos os horários para este evento estão ocupados. 😔 Por favor, escolha outro evento ou verifique mais tarde.' };
          // Keep them at SHOW_EVENTS?
          // Yes, they can select another event.
     }
@@ -415,8 +415,8 @@ async function handleEventSelection(phone, text, session) {
     const slotTextMap = [];
     const options = slots.map(s => {
         const timeStr = s.slot_time.substring(0, 5);
-        const dateStr = new Date(s.slot_date).toLocaleDateString();
-        const displayText = `${dateStr} at ${timeStr}`;
+        const dateStr = new Date(s.slot_date).toLocaleDateString('pt-BR');
+        const displayText = `${dateStr} às ${timeStr}`;
         const normalizedText = normalize(displayText);
 
         slotTextMap.push({
@@ -440,8 +440,8 @@ async function handleEventSelection(phone, text, session) {
 
     return {
         type: 'options',
-        header: 'Select Time',
-        body: 'Great! Here are the available time slots. Please pick one:',
+        header: 'Selecione o Horário',
+        body: 'Ótimo! Aqui estão os horários disponíveis. Por favor, escolha um:',
         options
     };
 }
@@ -457,7 +457,7 @@ async function handleSlotSelection(phone, text, session) {
     );
 
     if (!match) {
-        return { type: 'text', text: 'I missed that. Could you please select a time slot from the list? 😊' };
+        return { type: 'text', text: 'Não entendi. Poderia selecionar um horário da lista? 😊' };
     }
 
     const slotId = match.time_slot_id;
@@ -495,7 +495,7 @@ async function handleSlotSelection(phone, text, session) {
         await resetSession(phone);
 
         // Confirmation Message
-        const confirmMsg = `All set, ${extractedData.preferred_name || finalName}! 😊\nYour appointment is confirmed for ${new Date(result.slot_date).toLocaleDateString()} at ${result.slot_time.substring(0, 5)} at ${result.location}.\nWe look forward to seeing you!`;
+        const confirmMsg = `Tudo certo, ${extractedData.preferred_name || finalName}! 😊\nSeu agendamento está confirmado para ${new Date(result.slot_date).toLocaleDateString('pt-BR')} às ${result.slot_time.substring(0, 5)} em ${result.location}.\nEstamos ansiosos para vê-lo!`;
 
         return {
             type: 'final',
@@ -504,11 +504,11 @@ async function handleSlotSelection(phone, text, session) {
 
     } catch (e) {
         if (e.message === 'SLOT_FULL') {
-            return { type: 'text', text: 'Ah, that slot was just taken by someone else! 😅 Please choose another one.' };
+            return { type: 'text', text: 'Ah, esse horário acabou de ser preenchido por outra pessoa! 😅 Por favor, escolha outro.' };
         }
         if (e.message === 'ALREADY_BOOKED') {
             await resetSession(phone);
-            return { type: 'text', text: 'It looks like you already have an appointment for this event! 😊 See you there.' };
+            return { type: 'text', text: 'Parece que você já tem um agendamento para este evento! 😊 Nos vemos lá.' };
         }
         
         throw e; // Triggers global error handler -> reset
