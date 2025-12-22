@@ -2,17 +2,31 @@ import pool from '../config/db.js';
 
 async function getAllConversationLogs() {
   const [rows] = await pool.query(
-    'SELECT id, patient_phone, message_in, message_out, created_at FROM conversation_logs ORDER BY created_at DESC'
+    'SELECT id, whatsapp_number, direction, message, created_at FROM conversation_logs ORDER BY created_at DESC'
   );
-  return rows;
+  
+  return rows.map(row => ({
+    id: row.id,
+    patient_phone: row.whatsapp_number,
+    message_in: row.direction === 'in' ? row.message : null,
+    message_out: row.direction === 'out' ? row.message : null,
+    created_at: row.created_at
+  }));
 }
 
 async function getConversationLogsByPhone(phone) {
   const [rows] = await pool.query(
-    'SELECT id, patient_phone, message_in, message_out, created_at FROM conversation_logs WHERE patient_phone = ? ORDER BY created_at DESC',
+    'SELECT id, whatsapp_number, direction, message, created_at FROM conversation_logs WHERE whatsapp_number = ? ORDER BY created_at DESC',
     [phone]
   );
-  return rows;
+  
+  return rows.map(row => ({
+    id: row.id,
+    patient_phone: row.whatsapp_number,
+    message_in: row.direction === 'in' ? row.message : null,
+    message_out: row.direction === 'out' ? row.message : null,
+    created_at: row.created_at
+  }));
 }
 
 export { getAllConversationLogs, getConversationLogsByPhone };
