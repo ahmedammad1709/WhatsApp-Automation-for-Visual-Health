@@ -1,67 +1,29 @@
-const OpenAI = require('openai');
-require('dotenv').config();
+import OpenAI from 'openai';
+import 'dotenv/config';
 
-// Initialize OpenAI client with error handling (using v4+ API)
-let openai = null;
+// Initialize OpenAI client (v5 API)
+const apiKey = (process.env.OPENAI_API_KEY || '').trim();
+let client = null;
 let initializationError = null;
 
-try {
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('[ChatGPT] WARNING: OPENAI_API_KEY is not set in environment variables. ChatGPT features will be disabled.');
-    initializationError = new Error('OPENAI_API_KEY is not set');
-  } else {
-    // Verify OpenAI constructor is available
-    if (!OpenAI || typeof OpenAI !== 'function') {
-      const openaiModule = require('openai');
-      console.error('[ChatGPT] OpenAI constructor check failed. Module type:', typeof openaiModule);
-      console.error('[ChatGPT] Module exports:', Object.keys(openaiModule || {}).slice(0, 10));
-      throw new Error('OpenAI constructor not found in openai module');
+if (!apiKey) {
+  console.warn('[ChatGPT] WARNING: OPENAI_API_KEY is not set in environment variables. ChatGPT features will be disabled.');
+  initializationError = new Error('OPENAI_API_KEY is not set');
+} else {
+  try {
+    client = new OpenAI({ apiKey });
+    if (!client?.chat?.completions?.create) {
+      throw new Error('chat.completions.create is not available on the OpenAI client');
     }
-    
-    // Create API key with validation
-    const apiKey = (process.env.OPENAI_API_KEY || '').trim();
-    if (!apiKey || apiKey.length < 10) {
-      throw new Error(`Invalid API key format. Length: ${apiKey.length}, Starts with: ${apiKey.substring(0, 3)}`);
-    }
-    
-    // Validate API key format (should start with sk-)
-    if (!apiKey.startsWith('sk-')) {
-      console.warn('[ChatGPT] WARNING: API key does not start with "sk-". This might be invalid.');
-    }
-    
-    // Initialize OpenAI client with v4+ API
-    openai = new OpenAI({
-      apiKey: apiKey,
-    });
-    
-    // Verify initialization
-    if (!openai) {
-      throw new Error('OpenAI client is null after initialization');
-    }
-    
-    // Check for chat.completions.create method (v4+ API)
-    const hasChatCompletions = openai.chat && typeof openai.chat?.completions?.create === 'function';
-    
-    if (!hasChatCompletions) {
-      console.error('[ChatGPT] ERROR: OpenAI client methods not found');
-      console.error('[ChatGPT] Available properties:', Object.keys(openai).slice(0, 20));
-      console.error('[ChatGPT] Has chat:', !!openai.chat);
-      console.error('[ChatGPT] Has chat.completions:', !!openai.chat?.completions);
-      console.error('[ChatGPT] Has chat.completions.create:', hasChatCompletions);
-      throw new Error('OpenAI client missing required methods');
-    } else {
-      console.log('[ChatGPT] OpenAI client initialized successfully');
-      console.log('[ChatGPT] API Key length:', apiKey.length);
-      console.log('[ChatGPT] API Key prefix:', apiKey.substring(0, 7));
-      console.log('[ChatGPT] Using method: chat.completions.create (v4+ API)');
-    }
+    console.log('[ChatGPT] OpenAI client initialized successfully');
+    console.log('[ChatGPT] API Key length:', apiKey.length);
+    console.log('[ChatGPT] API Key prefix:', apiKey.substring(0, 7));
+  } catch (error) {
+    console.error('[ChatGPT] ERROR: Failed to initialize OpenAI client:', error.message);
+    console.error('[ChatGPT] Stack trace:', error.stack);
+    initializationError = error;
+    client = null;
   }
-} catch (error) {
-  console.error('[ChatGPT] ERROR: Failed to initialize OpenAI client:', error.message);
-  console.error('[ChatGPT] Stack trace:', error.stack);
-  console.error('[ChatGPT] OpenAI constructor available:', !!OpenAI);
-  initializationError = error;
-  openai = null;
 }
 
 const SYSTEM_PROMPT = `
@@ -80,7 +42,7 @@ You act as a middleware to interpret user intent and clean data.
 async function analyzeInput(text, step) {
   try {
     // Check if OpenAI is properly initialized
-    if (initializationError || !openai) {
+    if (initializationError || !client) {
       console.warn('[ChatGPT] OpenAI not available, using fallback for input analysis');
       return { classification: "valid", cleaned_value: text, reply: null };
     }
@@ -113,38 +75,16 @@ Output JSON ONLY:
 }
 `;
 
-    // Validate OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client is not initialized');
-    }
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+    });
 
-    // Use chat.completions.create (v4+ API)
-    let completion;
-    try {
-      if (!openai.chat || !openai.chat.completions || typeof openai.chat.completions.create !== 'function') {
-        throw new Error('chat.completions.create method not available');
-      }
-      
-      console.log('[ChatGPT] Calling chat.completions.create...');
-      completion = await openai.chat.completions.create({
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: prompt }
-        ],
-        model: 'gpt-3.5-turbo',
-        temperature: 0.3,
-      });
-      console.log('[ChatGPT] chat.completions.create response received');
-    } catch (apiError) {
-      console.error('[ChatGPT] API call error:', apiError.message);
-      console.error('[ChatGPT] API error stack:', apiError.stack);
-      console.error('[ChatGPT] OpenAI object type:', typeof openai);
-      console.error('[ChatGPT] OpenAI object keys:', Object.keys(openai || {}).slice(0, 10));
-      throw apiError;
-    }
-
-    // Validate response structure (v4+ API structure)
-    if (!completion || !completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+    if (!completion?.choices?.length) {
       console.error('[ChatGPT] Invalid response structure:', JSON.stringify(completion, null, 2));
       throw new Error('Invalid response structure from OpenAI API');
     }
@@ -178,7 +118,7 @@ Output JSON ONLY:
 async function extractPatientData(history) {
   try {
     // Check if OpenAI is properly initialized
-    if (initializationError || !openai) {
+    if (initializationError || !client) {
       console.warn('[ChatGPT] OpenAI not available, using fallback for data extraction');
       return { full_name: null, preferred_name: null, neighborhood: null, reason_for_visit: null };
     }
@@ -205,36 +145,16 @@ Rules:
 Output JSON ONLY.
 `;
 
-    // Validate OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client is not initialized');
-    }
+    const completion = await client.chat.completions.create({
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      model: 'gpt-4o-mini',
+      temperature: 0.1,
+    });
 
-    // Use chat.completions.create (v4+ API)
-    let completion;
-    try {
-      if (!openai.chat || !openai.chat.completions || typeof openai.chat.completions.create !== 'function') {
-        throw new Error('chat.completions.create method not available');
-      }
-      
-      console.log('[ChatGPT] Calling chat.completions.create for data extraction...');
-      completion = await openai.chat.completions.create({
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: prompt }
-        ],
-        model: 'gpt-3.5-turbo',
-        temperature: 0.1,
-      });
-      console.log('[ChatGPT] chat.completions.create response received for extraction');
-    } catch (apiError) {
-      console.error('[ChatGPT] API call error during extraction:', apiError.message);
-      console.error('[ChatGPT] API error stack:', apiError.stack);
-      throw apiError;
-    }
-
-    // Validate response structure (v4+ API structure)
-    if (!completion || !completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
+    if (!completion?.choices?.length) {
       console.error('[ChatGPT] Invalid response structure:', JSON.stringify(completion, null, 2));
       throw new Error('Invalid response structure from OpenAI API');
     }
@@ -258,4 +178,4 @@ Output JSON ONLY.
   }
 }
 
-module.exports = { analyzeInput, extractPatientData };
+export { analyzeInput, extractPatientData };

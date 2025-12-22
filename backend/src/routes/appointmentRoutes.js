@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as AppointmentController from '../controllers/appointmentController.js';
+
 const router = express.Router();
-const AppointmentController = require('../controllers/appointmentController');
 
 /**
  * GET /appointments - Get all appointments
@@ -16,4 +17,4 @@ router.get('/event/:event_id', AppointmentController.listByEvent);
 router.patch('/:id/status', AppointmentController.updateStatus);
 router.delete('/:id', AppointmentController.remove);
 
-module.exports = router;
+export default router;

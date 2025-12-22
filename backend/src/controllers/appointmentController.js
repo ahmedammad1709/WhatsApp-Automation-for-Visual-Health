@@ -1,5 +1,5 @@
-const { ok, error } = require('../utils/response');
-const AppointmentService = require('../services/appointmentService');
+import { ok, error } from '../utils/response.js';
+import * as AppointmentService from '../services/appointmentService.js';
 
 async function create(req, res) {
   const { patient_id, event_id, time_slot_id, status } = req.body || {};
@@ -61,4 +61,4 @@ async function updateStatus(req, res) {
   }
 }
 
-module.exports = { create, listByEvent, remove, getAll, updateStatus };
+export { create, listByEvent, remove, getAll, updateStatus };

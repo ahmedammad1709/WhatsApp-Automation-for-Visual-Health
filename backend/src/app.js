@@ -1,14 +1,15 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config';
 
-const cityRoutes = require('./routes/cityRoutes');
-const eventRoutes = require('./routes/eventRoutes');
-const timeSlotRoutes = require('./routes/timeSlotRoutes');
-const patientRoutes = require('./routes/patientRoutes');
-const appointmentRoutes = require('./routes/appointmentRoutes');
-const whatsappRoutes = require('./routes/whatsappRoutes');
-const { ok } = require('./utils/response');
+import cityRoutes from './routes/cityRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
+import timeSlotRoutes from './routes/timeSlotRoutes.js';
+import patientRoutes from './routes/patientRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
+import whatsappRoutes from './routes/whatsappRoutes.js';
+import conversationLogRoutes from './routes/conversationLogRoutes.js';
+import { ok } from './utils/response.js';
 
 const app = express();
 
@@ -42,10 +43,9 @@ app.use('/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/appointments', appointmentRoutes);
 
-const conversationLogRoutes = require('./routes/conversationLogRoutes');
 app.use('/api/conversation-logs', conversationLogRoutes);
 app.use('/conversation-logs', conversationLogRoutes);
 
 app.use('/', whatsappRoutes);
 
-module.exports = app;
+export default app;

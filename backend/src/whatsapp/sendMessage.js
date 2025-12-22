@@ -1,4 +1,4 @@
-const https = require('https');
+import https from 'https';
 
 function postMessage(path, body, phoneOverride) {
   return new Promise((resolve, reject) => {
@@ -88,4 +88,4 @@ async function sendFinalConfirmation(phone, appt, phoneOverride) {
   return sendText(phone, text, phoneOverride);
 }
 
-module.exports = { sendText, sendOptions, sendFinalConfirmation };
+export { sendText, sendOptions, sendFinalConfirmation };

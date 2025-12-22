@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function getAllConversationLogs() {
   const [rows] = await pool.query(
@@ -15,5 +15,5 @@ async function getConversationLogsByPhone(phone) {
   return rows;
 }
 
-module.exports = { getAllConversationLogs, getConversationLogsByPhone };
+export { getAllConversationLogs, getConversationLogsByPhone };
 

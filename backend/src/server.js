@@ -1,6 +1,8 @@
-require('dotenv').config();
-
-const app = require('./app');
+import 'dotenv/config';
+import app from './app.js';
+import reminder24h from './jobs/reminder24h.js';
+import reminder3h from './jobs/reminder3h.js';
+import postEventThanks from './jobs/postEventThanks.js';
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
 const PUBLIC_API_URL = process.env.VITE_API_URL || `http://localhost:${PORT}`;
@@ -16,8 +18,9 @@ app.listen(PORT, () => {
     console.error('WARNING: WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_API_VERSION is missing in .env');
   }
 });
+
 try {
-  require('./jobs/reminder24h').schedule();
-  require('./jobs/reminder3h').schedule();
-  require('./jobs/postEventThanks').schedule();
+  reminder24h.schedule();
+  reminder3h.schedule();
+  postEventThanks.schedule();
 } catch (_) {}

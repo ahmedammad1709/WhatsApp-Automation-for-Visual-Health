@@ -10,4 +10,4 @@ function error(message = 'Error', data = null) {
   return makeResponse(false, message, data);
 }
 
-module.exports = { makeResponse, ok, error };
+export { makeResponse, ok, error };

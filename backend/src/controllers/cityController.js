@@ -1,5 +1,5 @@
-const { ok, error } = require('../utils/response');
-const CityService = require('../services/cityService');
+import { ok, error } from '../utils/response.js';
+import * as CityService from '../services/cityService.js';
 
 async function list(req, res) {
   try {
@@ -49,4 +49,4 @@ async function update(req, res) {
   }
 }
 
-module.exports = { list, create, remove, update };
+export { list, create, remove, update };

@@ -1,5 +1,6 @@
-const pool = require('./src/config/db');
-const EventService = require('./src/services/eventService');
+import pool from './src/config/db.js';
+import * as EventService from './src/services/eventService.js';
+import 'dotenv/config';
 
 async function testCreateEventWithSlots() {
   try {

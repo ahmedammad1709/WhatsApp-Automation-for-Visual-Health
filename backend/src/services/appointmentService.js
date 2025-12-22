@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function createAppointment({ patient_id, event_id, time_slot_id, status }) {
   const conn = await pool.getConnection();
@@ -86,4 +86,4 @@ async function updateAppointmentStatus(id, status) {
   return result.affectedRows > 0;
 }
 
-module.exports = { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus };
+export { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus };

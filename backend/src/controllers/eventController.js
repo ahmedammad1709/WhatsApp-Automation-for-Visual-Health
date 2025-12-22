@@ -1,5 +1,5 @@
-const { ok, error } = require('../utils/response');
-const EventService = require('../services/eventService');
+import { ok, error } from '../utils/response.js';
+import * as EventService from '../services/eventService.js';
 
 async function list(req, res) {
   try {
@@ -65,4 +65,4 @@ async function update(req, res) {
   }
 }
 
-module.exports = { list, create, remove, update, listByCity };
+export { list, create, remove, update, listByCity };

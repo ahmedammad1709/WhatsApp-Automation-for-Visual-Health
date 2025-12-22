@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 function levenshtein(a, b) {
   const m = Array(a.length + 1).fill(0).map(() => Array(b.length + 1).fill(0));
@@ -59,8 +59,8 @@ async function getAvailableSlots(eventId) {
 }
 
 async function processUserMessage(from, text) {
-  const S = require('./whatsappService');
-  return S.processUserMessage(from, text);
+  const { processUserMessage: processMessage } = await import('./whatsappService.js');
+  return processMessage(from, text);
 }
 
-module.exports = { detectCity, getEventForCity, getNearestAvailableEvent, getAvailableSlots, processUserMessage };
+export { detectCity, getEventForCity, getNearestAvailableEvent, getAvailableSlots, processUserMessage };

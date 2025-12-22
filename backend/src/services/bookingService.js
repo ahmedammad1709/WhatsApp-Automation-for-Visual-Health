@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 /**
  * Transactional booking logic
@@ -93,4 +93,4 @@ async function findEarliestSlot(event_id) {
   return rows.length > 0 ? rows[0] : null;
 }
 
-module.exports = { bookSlot, findEarliestSlot };
+export { bookSlot, findEarliestSlot };

@@ -1,5 +1,5 @@
-const { ok, error } = require('../utils/response');
-const WhatsAppService = require('./whatsappService');
+import { ok, error } from '../utils/response.js';
+import * as WhatsAppService from './whatsappService.js';
 
 const PHONE_ID = process.env.WHATSAPP_PHONE_NUMBER_ID; // Force correct phone ID
 
@@ -127,4 +127,4 @@ async function handleWebhook(req, res) {
   }
 }
 
-module.exports = { verifyWebhook, handleWebhook };
+export { verifyWebhook, handleWebhook };

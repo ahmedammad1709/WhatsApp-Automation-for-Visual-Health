@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as CityController from '../controllers/cityController.js';
+
 const router = express.Router();
-const CityController = require('../controllers/cityController');
 
 /**
  * GET /cities
@@ -13,4 +14,4 @@ router.post('/', CityController.create);
 router.put('/:id', CityController.update);
 router.delete('/:id', CityController.remove);
 
-module.exports = router;
+export default router;

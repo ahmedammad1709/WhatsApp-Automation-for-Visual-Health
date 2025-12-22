@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as TimeSlotController from '../controllers/timeSlotController.js';
+
 const router = express.Router();
-const TimeSlotController = require('../controllers/timeSlotController');
 
 /**
  * GET /time-slots - Get all time slots
@@ -14,4 +15,4 @@ router.get('/event/:event_id', TimeSlotController.listByEvent);
 router.post('/', TimeSlotController.create);
 router.delete('/:id', TimeSlotController.remove);
 
-module.exports = router;
+export default router;

@@ -1,4 +1,5 @@
-const pool = require('./src/config/db');
+import pool from './src/config/db.js';
+import 'dotenv/config';
 
 async function checkSchema() {
   try {

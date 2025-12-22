@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as ConversationLogController from '../controllers/conversationLogController.js';
+
 const router = express.Router();
-const ConversationLogController = require('../controllers/conversationLogController');
 
 /**
  * GET /conversation-logs - Get all conversation logs
@@ -10,5 +11,5 @@ const ConversationLogController = require('../controllers/conversationLogControl
 router.get('/', ConversationLogController.getAll);
 router.get('/phone/:phone', ConversationLogController.getByPhone);
 
-module.exports = router;
+export default router;
 

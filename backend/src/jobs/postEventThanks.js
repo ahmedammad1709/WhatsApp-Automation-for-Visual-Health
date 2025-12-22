@@ -1,6 +1,6 @@
-const cron = require('node-cron');
-const pool = require('../config/db');
-const { sendText } = require('../whatsapp/sendMessage');
+import cron from 'node-cron';
+import pool from '../config/db.js';
+import { sendText } from '../whatsapp/sendMessage.js';
 
 function schedule() {
   cron.schedule('0 9 * * *', async () => {
@@ -25,4 +25,5 @@ function schedule() {
   });
 }
 
-module.exports = { schedule };
+export { schedule };
+export default { schedule };

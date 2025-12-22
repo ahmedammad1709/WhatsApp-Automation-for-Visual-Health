@@ -1,5 +1,5 @@
-const { ok, error } = require('../utils/response');
-const ConversationLogService = require('../services/conversationLogService');
+import { ok, error } from '../utils/response.js';
+import * as ConversationLogService from '../services/conversationLogService.js';
 
 async function getAll(req, res) {
   try {
@@ -22,5 +22,5 @@ async function getByPhone(req, res) {
   }
 }
 
-module.exports = { getAll, getByPhone };
+export { getAll, getByPhone };
 

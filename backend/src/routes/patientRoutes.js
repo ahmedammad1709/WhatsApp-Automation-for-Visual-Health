@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as PatientController from '../controllers/patientController.js';
+
 const router = express.Router();
-const PatientController = require('../controllers/patientController');
 
 /**
  * GET /patients - Get all patients
@@ -12,4 +13,4 @@ router.get('/', PatientController.getAll);
 router.post('/', PatientController.create);
 router.get('/:id', PatientController.getById);
 
-module.exports = router;
+export default router;

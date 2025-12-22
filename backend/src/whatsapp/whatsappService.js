@@ -1,7 +1,7 @@
-const pool = require('../config/db');
-const Sender = require('./sendMessage');
-const BookingService = require('../services/bookingService');
-const ChatGptService = require('../services/chatgptService');
+import pool from '../config/db.js';
+import * as Sender from './sendMessage.js';
+import * as BookingService from '../services/bookingService.js';
+import { analyzeInput, extractPatientData } from '../services/chatgptService.js';
 
 const CURRENT_SESSION_VERSION = 3;
 
@@ -227,7 +227,7 @@ async function handleNameInput(phone, text) {
     console.log(`[HANDLE NAME] Processing name input for ${phone}: "${text}"`);
     
     // GPT Analysis
-    const analysis = await ChatGptService.analyzeInput(text, 'ASK_NAME');
+    const analysis = await analyzeInput(text, 'ASK_NAME');
     console.log(`[HANDLE NAME] GPT Analysis:`, JSON.stringify(analysis));
 
     if (analysis.classification === 'restart') {
@@ -290,7 +290,7 @@ async function handleCityInput(phone, text) {
 
 async function handleNeighborhoodInput(phone, text) {
     // GPT Analysis
-    const analysis = await ChatGptService.analyzeInput(text, 'ASK_NEIGHBORHOOD');
+    const analysis = await analyzeInput(text, 'ASK_NEIGHBORHOOD');
 
     if (analysis.classification === 'restart') {
         await resetSession(phone);
@@ -314,7 +314,7 @@ async function handleNeighborhoodInput(phone, text) {
 
 async function handleReasonInput(phone, text, session) {
     // GPT Analysis
-    const analysis = await ChatGptService.analyzeInput(text, 'ASK_REASON');
+    const analysis = await analyzeInput(text, 'ASK_REASON');
 
     if (analysis.classification === 'restart') {
         await resetSession(phone);
@@ -467,7 +467,7 @@ async function handleSlotSelection(phone, text, session) {
         // --- Intelligent Data Extraction ---
         console.log(`[BOOKING] Extracting final patient data for ${phone}`);
         const history = await getConversationHistory(phone, 30); // Get last 30 messages
-        const extractedData = await ChatGptService.extractPatientData(history);
+        const extractedData = await extractPatientData(history);
         
         console.log(`[BOOKING] Extracted Data:`, JSON.stringify(extractedData));
 
@@ -546,7 +546,7 @@ async function sendOptions(phone, headerText, bodyText, options, phoneOverride) 
     }
 }
 
-module.exports = {
+export {
   handleIncomingMessage,
   logMessage,
   sendText,
@@ -555,5 +555,5 @@ module.exports = {
   createSession,
   resetSession,
   // Helper exports if needed by tests
-  processUserMessage: handleIncomingMessage // Alias if used elsewhere
+  handleIncomingMessage as processUserMessage
 };

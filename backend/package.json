@@ -1,6 +1,7 @@
 {
   "name": "whatsapp-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend API for whatsapp_project using Node.js, Express, MySQL (mysql2), MVC",
   "main": "src/server.js",
   "scripts": {
@@ -14,7 +15,7 @@
     "express": "^4.19.2",
     "mysql2": "^3.10.0",
     "node-cron": "^3.0.3",
-    "openai": "^4.20.0"
+    "openai": "^5.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

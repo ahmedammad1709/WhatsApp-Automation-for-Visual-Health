@@ -1,5 +1,5 @@
-const { ok, error } = require('../utils/response');
-const TimeSlotService = require('../services/timeSlotService');
+import { ok, error } from '../utils/response.js';
+import * as TimeSlotService from '../services/timeSlotService.js';
 
 async function listByEvent(req, res) {
   const event_id = parseInt(req.params.event_id, 10);
@@ -48,4 +48,4 @@ async function getAll(req, res) {
   }
 }
 
-module.exports = { listByEvent, create, remove, getAll };
+export { listByEvent, create, remove, getAll };

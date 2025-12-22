@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function listCities() {
   const [rows] = await pool.query(
@@ -35,4 +35,4 @@ async function updateCity(id, { name, state }) {
   return null;
 }
 
-module.exports = { listCities, createCity, deleteCity, updateCity };
+export { listCities, createCity, deleteCity, updateCity };

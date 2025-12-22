@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function listByEvent(event_id) {
   const [rows] = await pool.query(
@@ -34,4 +34,4 @@ async function getAllTimeSlots() {
   return rows;
 }
 
-module.exports = { listByEvent, createTimeSlot, deleteTimeSlot, getAllTimeSlots };
+export { listByEvent, createTimeSlot, deleteTimeSlot, getAllTimeSlots };

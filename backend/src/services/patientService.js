@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function createPatient({ full_name, whatsapp_number, city, neighborhood, reason }) {
   const [result] = await pool.query(
@@ -23,4 +23,4 @@ async function getAllPatients() {
   return rows;
 }
 
-module.exports = { createPatient, getPatientById, getAllPatients };
+export { createPatient, getPatientById, getAllPatients };

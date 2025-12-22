@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+import pool from '../config/db.js';
 
 async function listEvents() {
   const [rows] = await pool.query(
@@ -128,4 +128,4 @@ async function updateEvent(id, { city_id, location, start_date, end_date, max_ca
   return null;
 }
 
-module.exports = { listEvents, createEvent, deleteEvent, updateEvent, listEventsByCity };
+export { listEvents, createEvent, deleteEvent, updateEvent, listEventsByCity };
