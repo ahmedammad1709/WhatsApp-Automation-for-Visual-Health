@@ -56,33 +56,18 @@ async function handleWebhook(req, res) {
     // Log incoming message to DB
     await WhatsAppService.logMessage(from, 'in', text);
 
-    // Process message - try structured flow first, then ChatGPT
+    // Process message with ChatGPT-driven conversation
     let result;
     if (text && typeof text === 'string' && text.trim()) {
-      console.log('[WEBHOOK] Processing message...');
+      console.log('[WEBHOOK] Processing message with ChatGPT...');
       
       try {
-        // Use structured flow for appointment booking
-        // ChatGPT is used within the flow for natural responses when needed
-        // Fix: Use getSession instead of getState since getState is not exported/implemented
-        const session = await WhatsAppService.getSession(from);
-        const currentStep = session ? session.step : 'start';
-        
-        // Always use structured flow for booking process
+        // ChatGPT handles all conversation logic
         result = await WhatsAppService.handleIncomingMessage(from, text.trim());
-        
-        // If user wants to start booking and we're not in a flow, initiate it
-        if (currentStep === 'start' || !currentStep) {
-          const lowerText = text.toLowerCase();
-          if (lowerText.includes('agendar') || lowerText.includes('marcar') || lowerText.includes('consulta') || lowerText.includes('appointment') || lowerText.includes('book') || lowerText.includes('hi') || lowerText.includes('hello') || lowerText.includes('olá') || lowerText.includes('oi')) {
-            // Already handled by handleIncomingMessage above, but logic here seems redundant if handleIncomingMessage handles everything
-            // Let's rely on handleIncomingMessage returning the correct response.
-          }
-        }
       } catch (e) {
         console.error('[WEBHOOK] Error processing message:', e);
         // Always provide a response even on error
-        result = { type: 'text', text: 'Sorry, I encountered an error. Please try again or send "start" to begin.' };
+        result = { type: 'text', text: 'Desculpe, ocorreu um erro. Por favor, tente novamente ou digite "start" para começar.' };
       }
     } else {
       result = { type: 'text', text: 'Por favor, envie uma mensagem de texto.' };
@@ -90,7 +75,7 @@ async function handleWebhook(req, res) {
     
     // Ensure result exists
     if (!result) {
-      result = { type: 'text', text: 'Hi! I\'m your appointment assistant from Instituto Luz no Caminho. May I know your full name?' };
+      result = { type: 'text', text: 'Olá! Sou a assistente do Instituto Luz no Caminho. Como posso ajudá-lo hoje?' };
     }
 
     // Send response using forced PHONE_ID
@@ -101,11 +86,12 @@ async function handleWebhook(req, res) {
           await WhatsAppService.sendText(from, result.text, PHONE_ID);
           await WhatsAppService.logMessage(from, 'out', result.text);
         } else if (result.type === 'options') {
-          // Supports header, body, and title (legacy)
+          // Legacy support for options (though ChatGPT should handle everything in natural language)
           await WhatsAppService.sendOptions(from, result.header || result.title, result.body || result.title, result.options, PHONE_ID);
           await WhatsAppService.logMessage(from, 'out', result.body || result.title);
         } else if (result.type === 'final') {
-          const confirmationText = result.text || `Appointment confirmed for ${result.appointment?.slot_date} at ${result.appointment?.slot_time}`;
+          // Final confirmation message
+          const confirmationText = result.text || `Agendamento confirmado para ${result.appointment?.slot_date} às ${result.appointment?.slot_time}`;
           await WhatsAppService.sendText(from, confirmationText, PHONE_ID);
           await WhatsAppService.logMessage(from, 'out', confirmationText);
         }
@@ -113,7 +99,7 @@ async function handleWebhook(req, res) {
         console.error('[WEBHOOK] Error sending reply:', e);
         // Try to send error message
         try {
-          await WhatsAppService.sendText(from, 'Sorry, I encountered an error sending my reply. Please try again.', PHONE_ID);
+          await WhatsAppService.sendText(from, 'Desculpe, ocorreu um erro ao enviar minha resposta. Por favor, tente novamente.', PHONE_ID);
         } catch (sendError) {
           console.error('[WEBHOOK] Error sending error message:', sendError);
         }
