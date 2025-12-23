@@ -23,13 +23,161 @@ if (!apiKey) {
 }
 
 /* =========================
+   State Extraction
+========================= */
+
+/**
+ * Extracts current conversation state from history
+ * @param {Array<{direction: 'in'|'out', message: string}>} conversationHistory - Full conversation history
+ * @returns {Promise<object>} - Current state with collected fields
+ */
+async function extractConversationState(conversationHistory) {
+  if (!client || conversationHistory.length === 0) {
+    return {
+      full_name: null,
+      reason_for_visit: null,
+      city: null,
+      neighborhood: null,
+      selected_event_or_clinic: null,
+      preferred_date: null,
+      preferred_time_slot: null
+    };
+  }
+
+  try {
+    // Build conversation text
+    const conversationText = conversationHistory
+      .map((h) => `${h.direction === "in" ? "Usuário" : "Assistente"}: ${h.message}`)
+      .join("\n");
+
+    // Get available cities and events for context
+    const [cities] = await pool.query('SELECT name FROM cities');
+    const cityNames = cities.map(c => c.name).join(', ');
+    
+    const [events] = await pool.query(`
+      SELECT e.location, c.name AS city_name
+      FROM events e
+      JOIN cities c ON e.city_id = c.id
+    `);
+    const eventNames = events.map(e => `${e.location} em ${e.city_name}`).join(', ');
+
+    const prompt = `Analise esta conversa e extraia APENAS as informações que foram FORNECIDAS PELO USUÁRIO de forma clara e definitiva.
+
+Conversa:
+${conversationText}
+
+Cidades disponíveis: ${cityNames}
+Eventos disponíveis: ${eventNames}
+
+Extraia APENAS informações que o usuário forneceu explicitamente. Se o usuário apenas perguntou algo ou a informação não está clara, retorne null para esse campo.
+
+Retorne JSON APENAS com os campos que foram FORNECIDOS:
+{
+  "full_name": "nome completo se fornecido" | null,
+  "reason_for_visit": "motivo se fornecido" | null,
+  "city": "cidade se fornecida (use nome exato da lista)" | null,
+  "neighborhood": "bairro se fornecido" | null,
+  "selected_event_or_clinic": "evento/local se selecionado (use nome exato da lista)" | null,
+  "preferred_date": "data se fornecida (formato YYYY-MM-DD)" | null,
+  "preferred_time_slot": "horário se fornecido (formato HH:MM)" | null
+}
+
+IMPORTANTE: Seja conservador. Só retorne um valor se tiver CERTEZA de que o usuário forneceu essa informação.`;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.1, // Low temperature for consistent extraction
+      messages: [
+        { 
+          role: "system", 
+          content: "Você é um extrator preciso de informações. Retorne apenas JSON válido com os campos fornecidos." 
+        },
+        { role: "user", content: prompt },
+      ],
+    });
+
+    if (!completion?.choices?.length) {
+      throw new Error("Invalid response structure");
+    }
+
+    const content = completion.choices[0].message?.content;
+    if (!content) {
+      throw new Error("No content in response");
+    }
+
+    // Extract JSON
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0].replace(/```json/g, '').replace(/```/g, '').trim());
+      
+      // Validate and clean
+      return {
+        full_name: parsed.full_name && parsed.full_name.trim() ? parsed.full_name.trim() : null,
+        reason_for_visit: parsed.reason_for_visit && parsed.reason_for_visit.trim() ? parsed.reason_for_visit.trim() : null,
+        city: parsed.city && parsed.city.trim() ? parsed.city.trim() : null,
+        neighborhood: parsed.neighborhood && parsed.neighborhood.trim() ? parsed.neighborhood.trim() : null,
+        selected_event_or_clinic: parsed.selected_event_or_clinic && parsed.selected_event_or_clinic.trim() ? parsed.selected_event_or_clinic.trim() : null,
+        preferred_date: parsed.preferred_date && parsed.preferred_date.trim() ? parsed.preferred_date.trim() : null,
+        preferred_time_slot: parsed.preferred_time_slot && parsed.preferred_time_slot.trim() ? parsed.preferred_time_slot.trim() : null
+      };
+    }
+
+    return {
+      full_name: null,
+      reason_for_visit: null,
+      city: null,
+      neighborhood: null,
+      selected_event_or_clinic: null,
+      preferred_date: null,
+      preferred_time_slot: null
+    };
+
+  } catch (error) {
+    console.error('[ChatGPT] State extraction failed:', error);
+    return {
+      full_name: null,
+      reason_for_visit: null,
+      city: null,
+      neighborhood: null,
+      selected_event_or_clinic: null,
+      preferred_date: null,
+      preferred_time_slot: null
+    };
+  }
+}
+
+/**
+ * Formats state summary for injection into prompt
+ * @param {object} state - Current conversation state
+ * @returns {string} - Formatted state summary
+ */
+function formatStateSummary(state) {
+  const parts = [];
+  
+  if (state.full_name) parts.push(`Nome: ${state.full_name}`);
+  if (state.reason_for_visit) parts.push(`Motivo: ${state.reason_for_visit}`);
+  if (state.city) parts.push(`Cidade: ${state.city}`);
+  if (state.neighborhood) parts.push(`Bairro: ${state.neighborhood}`);
+  if (state.selected_event_or_clinic) parts.push(`Evento/Local: ${state.selected_event_or_clinic}`);
+  if (state.preferred_date) parts.push(`Data preferida: ${state.preferred_date}`);
+  if (state.preferred_time_slot) parts.push(`Horário preferido: ${state.preferred_time_slot}`);
+
+  if (parts.length === 0) {
+    return "Nenhuma informação coletada ainda.";
+  }
+
+  return parts.join('\n');
+}
+
+/* =========================
    System Prompt Builder
 ========================= */
 
 /**
  * Builds a comprehensive system prompt with current context (cities, events, time slots)
+ * @param {string} stateSummary - Current conversation state summary
  */
-async function buildSystemPrompt() {
+async function buildSystemPrompt(stateSummary = '') {
   // Fetch available cities and events from database
   let citiesInfo = [];
   let eventsInfo = [];
@@ -101,22 +249,59 @@ Ajudar o usuário a agendar uma consulta, mas de forma natural e conversacional.
 - Esclarecer dúvidas sobre saúde visual
 - Responder com empatia a sintomas ou preocupações
 
-INFORMAÇÕES NECESSÁRIAS (coletar naturalmente, em qualquer ordem):
-Você precisa coletar gradualmente estas informações durante a conversa:
+INFORMAÇÕES NECESSÁRIAS (coletar gradualmente):
+Você precisa coletar estas 7 informações:
 1. **full_name**: Nome completo do usuário
 2. **reason_for_visit**: Motivo da consulta (sintomas ou serviço desejado)
 3. **city**: Cidade onde o usuário deseja ser atendido
 4. **neighborhood**: Bairro onde o usuário mora
-5. **event**: Local/evento selecionado (se aplicável)
-6. **date**: Data preferida para a consulta
-7. **time_slot**: Horário preferido
+5. **selected_event_or_clinic**: Local/evento selecionado
+6. **preferred_date**: Data preferida para a consulta (formato YYYY-MM-DD)
+7. **preferred_time_slot**: Horário preferido (formato HH:MM)
 
-REGRAS IMPORTANTES:
-- Você decide o que perguntar a seguir - não siga uma ordem rígida
-- Se o usuário fizer uma pergunta aleatória ou expressar emoções, responda adequadamente e depois retorne suavemente ao agendamento
-- Se o usuário já forneceu uma informação anteriormente, lembre-se e não pergunte novamente
-- Seja um guia, não um interrogador
-- Se o usuário disser "start" ou quiser recomeçar, comece do zero
+═══════════════════════════════════════════════════════════════
+ESTADO ATUAL DA CONVERSA (INFORMAÇÕES JÁ COLETADAS):
+═══════════════════════════════════════════════════════════════
+${stateSummary}
+═══════════════════════════════════════════════════════════════
+
+⚠️ REGRAS CRÍTICAS - ANTI-LOOPING (OBRIGATÓRIO SEGUIR):
+
+1. **NUNCA RE-PERGUNTE INFORMAÇÕES JÁ COLETADAS**
+   - Se uma informação aparece no "ESTADO ATUAL DA CONVERSA" acima, ela está LOCKED
+   - NUNCA pergunte novamente por essa informação
+   - Use essa informação como verdade absoluta
+
+2. **PROGRESSÃO APENAS PARA FRENTE**
+   - Identifique quais campos estão faltando (comparando com o estado acima)
+   - Pergunte APENAS pelo próximo campo que falta
+   - Avance agressivamente em direção ao agendamento
+   - Se nome, motivo, cidade e bairro estão completos → mostre eventos disponíveis IMEDIATAMENTE
+   - Se evento está selecionado → mostre horários disponíveis IMEDIATAMENTE
+
+3. **TOLERÂNCIA A ERROS**
+   - Se o usuário repetir informação → reconheça brevemente ("Perfeito, já tenho isso") e continue
+   - Se o usuário disser "já te disse" → peça desculpas UMA VEZ e avance
+   - Se o usuário fizer pergunta aleatória → responda brevemente e retorne ao próximo passo
+   - Se o usuário expressar frustração → peça desculpas UMA VEZ e avance imediatamente
+
+4. **SEM LOOPS DE ESCLARECIMENTO**
+   - Não peça confirmação desnecessária
+   - Não pergunte "você quis dizer X ou Y?" repetidamente
+   - Se houver ambiguidade, escolha a interpretação mais provável e avance
+   - Se o usuário corrigir, aceite a correção e continue
+
+5. **FLUXO DE FINALIZAÇÃO**
+   - Quando tiver: nome, motivo, cidade, bairro, evento → mostre horários disponíveis
+   - Quando o usuário escolher um horário → confirme e outpute JSON IMEDIATAMENTE
+   - Não peça confirmação extra se já tem todas as informações
+
+EXEMPLO DE COMPORTAMENTO CORRETO:
+- Estado mostra: Nome: João, Cidade: São Paulo
+- Você NÃO pergunta nome ou cidade novamente
+- Você identifica que falta: motivo, bairro, evento, data, horário
+- Você pergunta APENAS pelo motivo (ou bairro, se o motivo já foi mencionado)
+- Você avança para o próximo passo SEMPRE
 
 CIDADES DISPONÍVEIS:
 ${citiesInfo || 'Nenhuma cidade configurada no momento.'}
@@ -131,12 +316,13 @@ NOTA: Quando o usuário mencionar uma data/horário, você pode sugerir horário
 
 QUANDO TODAS AS INFORMAÇÕES ESTIVEREM COMPLETAS:
 Você só deve outputar o JSON quando:
-1. Você coletou TODAS as 7 informações necessárias (nome, motivo, cidade, bairro, evento, data, horário)
-2. O usuário confirmou explicitamente que quer agendar (ex: "sim", "confirmo", "quero agendar", "pode confirmar", etc.)
+1. Você coletou TODAS as 7 informações necessárias (verifique o estado acima)
+2. O usuário selecionou um horário disponível OU confirmou explicitamente o agendamento
 
 Quando essas condições forem atendidas:
 1. Responda ao usuário com uma mensagem natural de confirmação em português (ex: "Perfeito! Vou confirmar seu agendamento...")
-2. NO FINAL da sua resposta, após uma linha em branco, adicione um objeto JSON válido com os dados coletados
+2. NO FINAL da sua resposta, após uma linha em branco, adicione um objeto JSON válido com TODOS os dados coletados
+3. Use os valores do "ESTADO ATUAL DA CONVERSA" acima como fonte de verdade para preencher o JSON
 
 Formato do JSON final (OBRIGATÓRIO - todos os campos devem estar preenchidos):
 {
@@ -151,11 +337,13 @@ Formato do JSON final (OBRIGATÓRIO - todos os campos devem estar preenchidos):
 
 IMPORTANTE SOBRE O JSON:
 - O JSON deve estar em uma linha separada, após sua resposta natural
-- Use apenas quando tiver TODAS as 7 informações e o usuário confirmar
+- Use apenas quando tiver TODAS as 7 informações (verifique o "ESTADO ATUAL DA CONVERSA" acima)
+- Use os valores do "ESTADO ATUAL DA CONVERSA" como fonte primária para preencher o JSON
 - A data deve estar no formato YYYY-MM-DD (ex: 2025-12-15)
 - O horário deve estar no formato HH:MM (ex: 14:30)
 - Use os nomes exatos de cidade e evento como aparecem nas listas acima
-- NUNCA outpute JSON se faltar alguma informação ou se o usuário não confirmou`;
+- NUNCA outpute JSON se faltar alguma informação no estado acima ou se o usuário não confirmou
+- Se o estado acima já tem todas as informações e o usuário escolheu um horário, outpute o JSON IMEDIATAMENTE`;
 
   return systemPrompt;
 }
@@ -180,10 +368,17 @@ async function processConversation(userMessage, conversationHistory) {
   }
 
   try {
-    // Build system prompt with current context
-    const systemPrompt = await buildSystemPrompt();
+    // STEP 1: Extract current conversation state
+    console.log('[ChatGPT] Extracting conversation state...');
+    const currentState = await extractConversationState(conversationHistory);
+    const stateSummary = formatStateSummary(currentState);
+    console.log('[ChatGPT] Current state:', currentState);
+    console.log('[ChatGPT] State summary:', stateSummary);
 
-    // Convert conversation history to OpenAI message format
+    // STEP 2: Build system prompt with state summary injected
+    const systemPrompt = await buildSystemPrompt(stateSummary);
+
+    // STEP 3: Convert conversation history to OpenAI message format
     const messages = [
       { role: "system", content: systemPrompt }
     ];
@@ -203,7 +398,7 @@ async function processConversation(userMessage, conversationHistory) {
 
     console.log(`[ChatGPT] Processing conversation with ${messages.length} messages`);
 
-    // Call OpenAI API
+    // STEP 4: Call OpenAI API
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.7, // Higher temperature for more natural, varied responses
@@ -220,7 +415,33 @@ async function processConversation(userMessage, conversationHistory) {
     }
 
     // Try to extract JSON from the response
-    const bookingData = extractBookingData(content);
+    let bookingData = extractBookingData(content);
+    
+    // Merge with current state if booking data is incomplete
+    if (bookingData) {
+      // Fill in any missing fields from current state
+      if (!bookingData.full_name && currentState.full_name) {
+        bookingData.full_name = currentState.full_name;
+      }
+      if (!bookingData.reason_for_visit && currentState.reason_for_visit) {
+        bookingData.reason_for_visit = currentState.reason_for_visit;
+      }
+      if (!bookingData.city && currentState.city) {
+        bookingData.city = currentState.city;
+      }
+      if (!bookingData.neighborhood && currentState.neighborhood) {
+        bookingData.neighborhood = currentState.neighborhood;
+      }
+      if (!bookingData.event && currentState.selected_event_or_clinic) {
+        bookingData.event = currentState.selected_event_or_clinic;
+      }
+      if (!bookingData.date && currentState.preferred_date) {
+        bookingData.date = currentState.preferred_date;
+      }
+      if (!bookingData.time_slot && currentState.preferred_time_slot) {
+        bookingData.time_slot = currentState.preferred_time_slot;
+      }
+    }
     
     // Remove JSON from the reply if present
     const reply = cleanReplyFromJson(content);
