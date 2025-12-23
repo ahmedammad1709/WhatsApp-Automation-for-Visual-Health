@@ -83,9 +83,38 @@ async function sendOptions(phone, headerText, bodyText, options, phoneOverride) 
   return postMessage('messages', body, phoneOverride);
 }
 
+// Sends a pre-approved template message (business-initiated, outside 24h window)
+async function sendTemplate(phone, templateName, bodyParams = [], languageCode = 'pt_BR', phoneOverride) {
+  if (!templateName) {
+    console.error('[GRAPH API] Missing template name for sendTemplate');
+    return { error: 'missing_template_name' };
+  }
+
+  const body = {
+    messaging_product: 'whatsapp',
+    to: phone,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+      components: [
+        {
+          type: 'body',
+          parameters: bodyParams.map((p) => ({
+            type: 'text',
+            text: String(p ?? '')
+          }))
+        }
+      ]
+    }
+  };
+
+  return postMessage('messages', body, phoneOverride);
+}
+
 async function sendFinalConfirmation(phone, appt, phoneOverride) {
   const text = `Agendado: ${appt.slot_date} ${appt.slot_time} em ${appt.location} - ${appt.city_name}`;
   return sendText(phone, text, phoneOverride);
 }
 
-export { sendText, sendOptions, sendFinalConfirmation };
+export { sendText, sendOptions, sendTemplate, sendFinalConfirmation };
