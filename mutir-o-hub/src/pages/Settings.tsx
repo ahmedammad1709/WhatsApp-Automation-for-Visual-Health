@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 
 // Purpose: Settings and configuration page
@@ -26,6 +24,39 @@ export default function Settings() {
             Configure system settings and integrations
           </p>
         </div>
+
+        {/* AI Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Preferences</CardTitle>
+            <CardDescription>
+              Configure AI model behavior and style
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ai-model">AI Model</Label>
+              <Input
+                id="ai-model"
+                defaultValue="gpt-4-turbo"
+                disabled
+              />
+              <p className="text-xs text-muted-foreground">
+                Currently using GPT-4 Turbo for optimal performance
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ai-style">Conversation Style</Label>
+              <Textarea
+                id="ai-style"
+                placeholder="Define the AI's personality and tone..."
+                defaultValue="Seja profissional, amigável e empático. Priorize a clareza e a precisão das informações de saúde."
+                rows={8}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* API Configuration */}
         <Card>
@@ -74,146 +105,6 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* WhatsApp Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle>WhatsApp Configuration</CardTitle>
-            <CardDescription>
-              Configure WhatsApp bot behavior and settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp-number">WhatsApp Business Number</Label>
-              <Input
-                id="whatsapp-number"
-                placeholder="+55 11 98765-4321"
-                defaultValue="+55 11 98765-4321"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="welcome-message">Welcome Message</Label>
-              <Textarea
-                id="welcome-message"
-                placeholder="Hello! Welcome to our health campaign..."
-                defaultValue="Olá! Bem-vindo ao Mutirão de Saúde. Como posso ajudá-lo hoje?"
-                rows={4}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Auto-reply</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically respond to incoming messages
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Working Hours Only</Label>
-                <p className="text-sm text-muted-foreground">
-                  Only respond during business hours (8AM - 6PM)
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Preferences */}
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Preferences</CardTitle>
-            <CardDescription>
-              Configure AI model behavior and style
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ai-model">AI Model</Label>
-              <Input
-                id="ai-model"
-                defaultValue="gpt-4-turbo"
-                disabled
-              />
-              <p className="text-xs text-muted-foreground">
-                Currently using GPT-4 Turbo for optimal performance
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="temperature">Temperature (Creativity)</Label>
-              <Input
-                id="temperature"
-                type="number"
-                step="0.1"
-                min="0"
-                max="2"
-                defaultValue="0.7"
-              />
-              <p className="text-xs text-muted-foreground">
-                Lower values = more focused, Higher values = more creative
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ai-style">Conversation Style</Label>
-              <Textarea
-                id="ai-style"
-                placeholder="Define the AI's personality and tone..."
-                defaultValue="Seja profissional, amigável e empático. Priorize a clareza e a precisão das informações de saúde."
-                rows={4}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>
-              Manage how you receive notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Email Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive daily summary reports via email
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>SMS Alerts</Label>
-                <p className="text-sm text-muted-foreground">
-                  Get SMS alerts for critical events
-                </p>
-              </div>
-              <Switch />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Browser Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Show desktop notifications for new appointments
-                </p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Save Button */}
         <div className="flex justify-end">

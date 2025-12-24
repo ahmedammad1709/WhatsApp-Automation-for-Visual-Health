@@ -8,6 +8,7 @@ import patientRoutes from './routes/patientRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import whatsappRoutes from './routes/whatsappRoutes.js';
 import conversationLogRoutes from './routes/conversationLogRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import { ok } from './utils/response.js';
 
 const app = express();
@@ -41,6 +42,9 @@ app.use('/appointments', appointmentRoutes);
 
 app.use('/api/conversation-logs', conversationLogRoutes);
 app.use('/conversation-logs', conversationLogRoutes);
+
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 app.use('/', whatsappRoutes);
 

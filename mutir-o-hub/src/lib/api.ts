@@ -45,6 +45,11 @@ export const getDashboardStats = async () => {
   return response.data;
 };
 
+export const getDashboardCharts = async () => {
+  const response = await api.get('/api/dashboard/charts');
+  return response.data;
+};
+
 // Events API
 export const getEvents = async (params?: any) => {
   const response = await api.get('/api/events', { params });
