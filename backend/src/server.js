@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import app from './app.js';
 import reminder24h from './jobs/reminder24h.js';
-import reminder3h from './jobs/reminder3h.js';
 import postEventThanks from './jobs/postEventThanks.js';
 
 const PORT = parseInt(process.env.PORT || '5000', 10);
@@ -21,6 +20,5 @@ app.listen(PORT, () => {
 
 try {
   reminder24h.schedule();
-  reminder3h.schedule();
   postEventThanks.schedule();
 } catch (_) {}

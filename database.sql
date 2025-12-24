@@ -26,16 +26,16 @@ CREATE TABLE `appointments` (
   `id` int NOT NULL AUTO_INCREMENT,
   `patient_id` int NOT NULL,
   `event_id` int NOT NULL,
-  `time_slot_id` int NOT NULL,
+  `appointment_date` date NOT NULL,
   `status` enum('scheduled','cancelled','completed') DEFAULT 'scheduled',
+  `reminder_24h_sent` tinyint(1) NOT NULL DEFAULT '0',
+  `reminder_24h_sent_at` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`),
   KEY `event_id` (`event_id`),
-  KEY `time_slot_id` (`time_slot_id`),
   CONSTRAINT `appointments_ibfk_1` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),
-  CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`),
-  CONSTRAINT `appointments_ibfk_3` FOREIGN KEY (`time_slot_id`) REFERENCES `time_slots` (`id`)
+  CONSTRAINT `appointments_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -187,35 +187,7 @@ LOCK TABLES `patients` WRITE;
 /*!40000 ALTER TABLE `patients` ENABLE KEYS */;
 UNLOCK TABLES;
 
---
--- Table structure for table `time_slots`
---
-
-DROP TABLE IF EXISTS `time_slots`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `time_slots` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `event_id` int NOT NULL,
-  `slot_date` date NOT NULL,
-  `slot_time` time NOT NULL,
-  `max_per_slot` int DEFAULT '20',
-  `reserved_count` int DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `event_id` (`event_id`),
-  CONSTRAINT `time_slots_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `time_slots`
---
-
-LOCK TABLES `time_slots` WRITE;
-/*!40000 ALTER TABLE `time_slots` DISABLE KEYS */;
-/*!40000 ALTER TABLE `time_slots` ENABLE KEYS */;
-UNLOCK TABLES;
+-- time_slots table removed: scheduling is now date-based only
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

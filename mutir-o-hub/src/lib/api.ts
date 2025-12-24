@@ -103,27 +103,6 @@ export const createPatient = async (patientData: any) => {
   return response.data?.data;
 };
 
-// Time Slots API
-export const getTimeSlots = async () => {
-  const response = await api.get('/api/time-slots');
-  return response.data?.data ?? [];
-};
-
-export const getTimeSlotsByEvent = async (eventId: string | number) => {
-  const response = await api.get(`/api/time-slots/event/${eventId}`);
-  return response.data?.data ?? [];
-};
-
-export const createTimeSlot = async (timeSlotData: any) => {
-  const response = await api.post('/api/time-slots', timeSlotData);
-  return response.data?.data;
-};
-
-export const deleteTimeSlot = async (id: string | number) => {
-  const response = await api.delete(`/api/time-slots/${id}`);
-  return response.data;
-};
-
 // Conversation Logs API
 export const getConversationLogs = async () => {
   const response = await api.get('/api/conversation-logs');

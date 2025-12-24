@@ -86,9 +86,9 @@ async function markSessionComplete(phone) {
   );
 }
 
-// --- Helper: Find matching event and time slot from booking data ---
+// --- Helper: Find matching event from booking data (DATE-ONLY, NO TIME SLOTS) ---
 
-async function findMatchingEventAndSlot(bookingData) {
+async function findMatchingEvent(bookingData) {
   try {
     // Find city
     const [cities] = await pool.query('SELECT id, name FROM cities');
@@ -124,61 +124,22 @@ async function findMatchingEventAndSlot(bookingData) {
       throw new Error(`No event found for city "${bookingData.city}"`);
     }
 
-    // Parse date
+    // Parse date (appointment date only)
     const targetDate = new Date(bookingData.date);
     if (isNaN(targetDate.getTime())) {
       throw new Error(`Invalid date: ${bookingData.date}`);
     }
     const dateStr = targetDate.toISOString().split('T')[0];
 
-    // Parse time
-    let timeStr = bookingData.time_slot;
-    if (!timeStr.includes(':')) {
-      throw new Error(`Invalid time format: ${bookingData.time_slot}`);
-    }
-    // Ensure time is in HH:MM:SS format
-    const timeParts = timeStr.split(':');
-    if (timeParts.length === 2) {
-      timeStr = `${timeStr}:00`;
-    }
-
-    // Find matching time slot
-    const [slots] = await pool.query(
-      `SELECT id, slot_date, slot_time, reserved_count, max_per_slot 
-       FROM time_slots 
-       WHERE event_id = ? AND slot_date = ? AND slot_time LIKE ? AND reserved_count < max_per_slot
-       ORDER BY slot_time ASC LIMIT 1`,
-      [event.id, dateStr, `${timeStr.substring(0, 5)}%`]
-    );
-
-    if (slots.length === 0) {
-      // Try to find nearest available slot
-      const [allSlots] = await pool.query(
-        `SELECT id, slot_date, slot_time, reserved_count, max_per_slot 
-         FROM time_slots 
-         WHERE event_id = ? AND slot_date >= ? AND reserved_count < max_per_slot
-         ORDER BY slot_date ASC, slot_time ASC LIMIT 5`,
-        [event.id, dateStr]
-      );
-
-      if (allSlots.length === 0) {
-        throw new Error(`No available slots found for event "${event.location}"`);
-      }
-
-      // Use the first available slot
-      return {
-        event_id: event.id,
-        time_slot_id: allSlots[0].id,
-        event: event,
-        slot: allSlots[0]
-      };
+    // Ensure date is within event range
+    if (dateStr < event.start_date || dateStr > event.end_date) {
+      throw new Error(`Selected date ${dateStr} is outside the event dates for "${event.location}"`);
     }
 
     return {
       event_id: event.id,
-      time_slot_id: slots[0].id,
-      event: event,
-      slot: slots[0]
+      appointment_date: dateStr,
+      event
     };
 
   } catch (error) {
@@ -237,35 +198,34 @@ async function handleIncomingMessage(phone, text) {
       console.log(`[BOOKING] Complete booking data received:`, bookingData);
       
       try {
-        // Find matching event and time slot
-        const match = await findMatchingEventAndSlot(bookingData);
+        // Find matching event (date-only)
+        const match = await findMatchingEvent(bookingData);
         
         // Create booking
-        const result = await BookingService.bookSlot({
+        const result = await BookingService.bookAppointment({
           whatsapp_number: phone,
           full_name: bookingData.full_name,
           city: bookingData.city,
           neighborhood: bookingData.neighborhood,
           reason: bookingData.reason_for_visit,
           event_id: match.event_id,
-          time_slot_id: match.time_slot_id
+          appointment_date: match.appointment_date
         });
 
         // Mark session as complete
         await markSessionComplete(phone);
 
-        // Format confirmation message
-        const slotDate = new Date(result.slot_date).toLocaleDateString('pt-BR');
-        const slotTime = result.slot_time.substring(0, 5);
-        const confirmMsg = `${reply}\n\n✅ Agendamento confirmado para ${slotDate} às ${slotTime} em ${result.location}. Estamos ansiosos para vê-lo!`;
+        // Format confirmation message (DATE-ONLY)
+        const apptDate = new Date(result.appointment_date).toLocaleDateString('pt-BR');
+        const confirmMsg = `${reply}\n\n✅ Sua consulta está confirmada para o dia ${apptDate}, em ${result.location}, ${result.city_name}.`;
 
         return {
           type: 'final',
           text: confirmMsg,
           appointment: {
-            slot_date: result.slot_date,
-            slot_time: result.slot_time,
-            location: result.location
+            appointment_date: result.appointment_date,
+            location: result.location,
+            city_name: result.city_name
           }
         };
 

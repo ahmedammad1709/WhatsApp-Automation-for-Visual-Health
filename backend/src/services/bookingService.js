@@ -1,24 +1,14 @@
 import pool from '../config/db.js';
 
 /**
- * Transactional booking logic
+ * Transactional booking logic (DATE-ONLY, NO TIME SLOTS)
  */
-async function bookSlot({ whatsapp_number, full_name, city, neighborhood, reason, event_id, time_slot_id }) {
+async function bookAppointment({ whatsapp_number, full_name, city, neighborhood, reason, event_id, appointment_date }) {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    // 1. Lock Slot (Atomic Update)
-    const [updateResult] = await connection.query(
-      'UPDATE time_slots SET reserved_count = reserved_count + 1 WHERE id = ? AND reserved_count < max_per_slot',
-      [time_slot_id]
-    );
-
-    if (updateResult.affectedRows === 0) {
-      throw new Error('SLOT_FULL');
-    }
-
-    // 2. Manage Patient
+    // 1. Manage Patient
     let patientId;
     const [existingPatients] = await connection.query(
       'SELECT id FROM patients WHERE whatsapp_number = ?',
@@ -27,7 +17,7 @@ async function bookSlot({ whatsapp_number, full_name, city, neighborhood, reason
 
     if (existingPatients.length > 0) {
       patientId = existingPatients[0].id;
-      // "If patient exists: DO NOT overwrite existing reason. Reuse existing patient ID"
+      // If patient exists: reuse existing patient ID without overwriting details
     } else {
       const [createResult] = await connection.query(
         'INSERT INTO patients (whatsapp_number, full_name, city, neighborhood, reason, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
@@ -36,45 +26,65 @@ async function bookSlot({ whatsapp_number, full_name, city, neighborhood, reason
       patientId = createResult.insertId;
     }
 
-    // 3. Create Appointment
-    // Check if appointment already exists for this patient/event to prevent double booking? 
-    // User Requirement: "No double-booked slots". This usually means 1 person can't take the same slot twice, or the slot can't be taken if full.
-    // I'll add a check for existing appointment in this event to be safe, though not explicitly asked, it's "robust".
-    const [existingAppt] = await connection.query(
-        'SELECT id FROM appointments WHERE patient_id = ? AND event_id = ? AND status != "cancelled"',
-        [patientId, event_id]
+    // 2. Validate event and date range
+    const [[event]] = await connection.query(
+      'SELECT id, city_id, location, start_date, end_date, max_capacity FROM events WHERE id = ?',
+      [event_id]
     );
-    
-    if (existingAppt.length > 0) {
-         // Rollback the slot reservation since we aren't creating a new appointment
-         // Actually, if we throw, the rollback block handles it.
-         throw new Error('ALREADY_BOOKED');
+
+    if (!event) {
+      throw new Error('EVENT_NOT_FOUND');
     }
 
-    const [apptResult] = await connection.query(
-      'INSERT INTO appointments (patient_id, event_id, time_slot_id, status, created_at) VALUES (?, ?, ?, ?, NOW())',
-      [patientId, event_id, time_slot_id, 'scheduled']
+    const dateOnly = new Date(appointment_date);
+    if (Number.isNaN(dateOnly.getTime())) {
+      throw new Error('INVALID_APPOINTMENT_DATE');
+    }
+    const dateStr = dateOnly.toISOString().split('T')[0];
+
+    if (dateStr < event.start_date || dateStr > event.end_date) {
+      throw new Error('DATE_OUT_OF_RANGE');
+    }
+
+    // 3. Capacity check per event/date
+    const [[countRow]] = await connection.query(
+      'SELECT COUNT(*) AS count FROM appointments WHERE event_id = ? AND appointment_date = ? AND status != "cancelled"',
+      [event_id, dateStr]
     );
 
-    // Fetch slot details for confirmation message
-    const [slotDetails] = await connection.query(
-        'SELECT slot_date, slot_time FROM time_slots WHERE id = ?',
-        [time_slot_id]
+    if (countRow.count >= event.max_capacity) {
+      throw new Error('EVENT_FULL');
+    }
+
+    // 4. Prevent duplicate booking for same patient/event/date
+    const [existingAppt] = await connection.query(
+      'SELECT id FROM appointments WHERE patient_id = ? AND event_id = ? AND appointment_date = ? AND status != "cancelled"',
+      [patientId, event_id, dateStr]
     );
-    
-    // Fetch event location for confirmation message
-    const [eventDetails] = await connection.query(
-        'SELECT location FROM events WHERE id = ?',
-        [event_id]
+
+    if (existingAppt.length > 0) {
+      throw new Error('ALREADY_BOOKED');
+    }
+
+    // 5. Create Appointment
+    const [apptResult] = await connection.query(
+      'INSERT INTO appointments (patient_id, event_id, appointment_date, status, created_at) VALUES (?, ?, ?, ?, NOW())',
+      [patientId, event_id, dateStr, 'scheduled']
+    );
+
+    // Fetch city name for confirmation message
+    const [[cityRow]] = await connection.query(
+      'SELECT name FROM cities WHERE id = ?',
+      [event.city_id]
     );
 
     await connection.commit();
-    
-    return { 
-        appointmentId: apptResult.insertId, 
-        slot_date: slotDetails[0].slot_date,
-        slot_time: slotDetails[0].slot_time,
-        location: eventDetails[0]?.location || city // Fallback to city if location missing
+
+    return {
+      appointmentId: apptResult.insertId,
+      appointment_date: dateStr,
+      location: event.location,
+      city_name: cityRow?.name || city
     };
 
   } catch (e) {
@@ -85,12 +95,4 @@ async function bookSlot({ whatsapp_number, full_name, city, neighborhood, reason
   }
 }
 
-async function findEarliestSlot(event_id) {
-  const [rows] = await pool.query(
-    'SELECT id, slot_date, slot_time FROM time_slots WHERE event_id = ? AND reserved_count < max_per_slot ORDER BY slot_date ASC, slot_time ASC LIMIT 1',
-    [event_id]
-  );
-  return rows.length > 0 ? rows[0] : null;
-}
-
-export { bookSlot, findEarliestSlot };
+export { bookAppointment };

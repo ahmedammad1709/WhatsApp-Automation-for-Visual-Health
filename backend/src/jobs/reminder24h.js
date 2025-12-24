@@ -48,11 +48,6 @@ function formatDateBR(dateStr) {
   return d.toLocaleDateString('pt-BR');
 }
 
-function formatTimeHHMM(timeStr) {
-  if (!timeStr) return '';
-  return timeStr.substring(0, 5);
-}
-
 async function fetchAppointmentsForDate(targetDateStr) {
   const [rows] = await pool.query(
     `SELECT 
@@ -62,17 +57,15 @@ async function fetchAppointmentsForDate(targetDateStr) {
         a.reminder_24h_sent_at,
         p.full_name,
         p.whatsapp_number AS phone,
-        ts.slot_date,
-        ts.slot_time,
+        a.appointment_date,
         e.location,
         c.name AS city_name
      FROM appointments a
      JOIN patients p ON p.id = a.patient_id
-     JOIN time_slots ts ON ts.id = a.time_slot_id
      JOIN events e ON e.id = a.event_id
      JOIN cities c ON c.id = e.city_id
      WHERE a.status = 'scheduled'
-       AND ts.slot_date = ?
+       AND a.appointment_date = ?
        AND (a.reminder_24h_sent IS NULL OR a.reminder_24h_sent = 0)`,
     [targetDateStr]
   );
@@ -92,9 +85,8 @@ async function getLastInboundTimestamp(phone) {
 }
 
 function buildReminderMessage(appt) {
-  const date = formatDateBR(appt.slot_date);
-  const time = formatTimeHHMM(appt.slot_time);
-  return `Olá, ${appt.full_name}! Aqui é o Instituto Luz no Caminho. Lembrete da sua consulta amanhã, ${date}, às ${time}, em ${appt.location}, ${appt.city_name}. Se precisar reagendar, responda por aqui.`;
+  const date = formatDateBR(appt.appointment_date);
+  return `Olá, ${appt.full_name}! Aqui é o Instituto Luz no Caminho. Lembrete da sua consulta amanhã, ${date}, em ${appt.location}, ${appt.city_name}. Se precisar reagendar, responda por aqui.`;
 }
 
 async function markReminderSent(apptId) {
@@ -120,12 +112,11 @@ async function sendReminder(appt) {
         return false;
       }
       console.log(`[REMINDER 24H] Sending template (outside 24h window) to ${appt.phone}`);
-      const date = formatDateBR(appt.slot_date);
-      const time = formatTimeHHMM(appt.slot_time);
+      const date = formatDateBR(appt.appointment_date);
       await sendTemplate(
         appt.phone,
         TEMPLATE_NAME,
-        [appt.full_name, date, time, appt.location, appt.city_name],
+        [appt.full_name, date, appt.location, appt.city_name],
         TEMPLATE_LANG,
         PHONE_ID_OVERRIDE
       );

@@ -113,7 +113,8 @@ async function sendTemplate(phone, templateName, bodyParams = [], languageCode =
 }
 
 async function sendFinalConfirmation(phone, appt, phoneOverride) {
-  const text = `Agendado: ${appt.slot_date} ${appt.slot_time} em ${appt.location} - ${appt.city_name}`;
+  const dateStr = new Date(appt.appointment_date).toLocaleDateString('pt-BR');
+  const text = `Sua consulta está confirmada para o dia ${dateStr}, em ${appt.location}, ${appt.city_name}.`;
   return sendText(phone, text, phoneOverride);
 }
 

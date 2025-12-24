@@ -39,8 +39,7 @@ async function extractConversationState(conversationHistory) {
       city: null,
       neighborhood: null,
       selected_event_or_clinic: null,
-      preferred_date: null,
-      preferred_time_slot: null
+      preferred_date: null
     };
   }
 
@@ -117,8 +116,7 @@ IMPORTANTE: Seja conservador. Só retorne um valor se tiver CERTEZA de que o usu
         city: parsed.city && parsed.city.trim() ? parsed.city.trim() : null,
         neighborhood: parsed.neighborhood && parsed.neighborhood.trim() ? parsed.neighborhood.trim() : null,
         selected_event_or_clinic: parsed.selected_event_or_clinic && parsed.selected_event_or_clinic.trim() ? parsed.selected_event_or_clinic.trim() : null,
-        preferred_date: parsed.preferred_date && parsed.preferred_date.trim() ? parsed.preferred_date.trim() : null,
-        preferred_time_slot: parsed.preferred_time_slot && parsed.preferred_time_slot.trim() ? parsed.preferred_time_slot.trim() : null
+        preferred_date: parsed.preferred_date && parsed.preferred_date.trim() ? parsed.preferred_date.trim() : null
       };
     }
 
@@ -128,8 +126,7 @@ IMPORTANTE: Seja conservador. Só retorne um valor se tiver CERTEZA de que o usu
       city: null,
       neighborhood: null,
       selected_event_or_clinic: null,
-      preferred_date: null,
-      preferred_time_slot: null
+      preferred_date: null
     };
 
   } catch (error) {
@@ -140,8 +137,7 @@ IMPORTANTE: Seja conservador. Só retorne um valor se tiver CERTEZA de que o usu
       city: null,
       neighborhood: null,
       selected_event_or_clinic: null,
-      preferred_date: null,
-      preferred_time_slot: null
+      preferred_date: null
     };
   }
 }
@@ -160,7 +156,6 @@ function formatStateSummary(state) {
   if (state.neighborhood) parts.push(`Bairro: ${state.neighborhood}`);
   if (state.selected_event_or_clinic) parts.push(`Evento/Local: ${state.selected_event_or_clinic}`);
   if (state.preferred_date) parts.push(`Data preferida: ${state.preferred_date}`);
-  if (state.preferred_time_slot) parts.push(`Horário preferido: ${state.preferred_time_slot}`);
 
   if (parts.length === 0) {
     return "Nenhuma informação coletada ainda.";
@@ -174,14 +169,13 @@ function formatStateSummary(state) {
 ========================= */
 
 /**
- * Builds a comprehensive system prompt with current context (cities, events, time slots)
+ * Builds a comprehensive system prompt with current context (cities, events)
  * @param {string} stateSummary - Current conversation state summary
  */
 async function buildSystemPrompt(stateSummary = '') {
   // Fetch available cities and events from database
   let citiesInfo = [];
   let eventsInfo = [];
-  let timeSlotsInfo = [];
   
   try {
     const [cities] = await pool.query('SELECT id, name, state FROM cities ORDER BY name ASC');
@@ -199,35 +193,6 @@ async function buildSystemPrompt(stateSummary = '') {
       const endDate = new Date(e.end_date).toLocaleDateString('pt-BR');
       return `- ${e.location} em ${e.city_name} (${startDate} a ${endDate})`;
     }).join('\n');
-
-    // Fetch available time slots (next 20 available slots)
-    const [slots] = await pool.query(`
-      SELECT ts.slot_date, ts.slot_time, e.location, c.name AS city_name
-      FROM time_slots ts
-      JOIN events e ON ts.event_id = e.id
-      JOIN cities c ON e.city_id = c.id
-      WHERE ts.reserved_count < ts.max_per_slot
-        AND ts.slot_date >= CURDATE()
-      ORDER BY ts.slot_date ASC, ts.slot_time ASC
-      LIMIT 20
-    `);
-
-    if (slots.length > 0) {
-      const slotsByEvent = {};
-      slots.forEach(slot => {
-        const key = `${slot.location} - ${slot.city_name}`;
-        if (!slotsByEvent[key]) {
-          slotsByEvent[key] = [];
-        }
-        const dateStr = new Date(slot.slot_date).toLocaleDateString('pt-BR');
-        const timeStr = slot.slot_time.substring(0, 5);
-        slotsByEvent[key].push(`${dateStr} às ${timeStr}`);
-      });
-
-      timeSlotsInfo = Object.entries(slotsByEvent).map(([event, times]) => {
-        return `  ${event}:\n    ${times.slice(0, 5).join(', ')}${times.length > 5 ? '...' : ''}`;
-      }).join('\n');
-    }
   } catch (error) {
     console.error('[ChatGPT] Error fetching context data:', error);
   }
@@ -250,14 +215,13 @@ Ajudar o usuário a agendar uma consulta, mas de forma natural e conversacional.
 - Responder com empatia a sintomas ou preocupações
 
 INFORMAÇÕES NECESSÁRIAS (coletar gradualmente):
-Você precisa coletar estas 7 informações:
+Você precisa coletar estas informações (sem horário):
 1. **full_name**: Nome completo do usuário
 2. **reason_for_visit**: Motivo da consulta (sintomas ou serviço desejado)
 3. **city**: Cidade onde o usuário deseja ser atendido
 4. **neighborhood**: Bairro onde o usuário mora
 5. **selected_event_or_clinic**: Local/evento selecionado
 6. **preferred_date**: Data preferida para a consulta (formato YYYY-MM-DD)
-7. **preferred_time_slot**: Horário preferido (formato HH:MM)
 
 ═══════════════════════════════════════════════════════════════
 ESTADO ATUAL DA CONVERSA (INFORMAÇÕES JÁ COLETADAS):
@@ -276,8 +240,8 @@ ${stateSummary}
    - Identifique quais campos estão faltando (comparando com o estado acima)
    - Pergunte APENAS pelo próximo campo que falta
    - Avance agressivamente em direção ao agendamento
-   - Se nome, motivo, cidade e bairro estão completos → mostre eventos disponíveis IMEDIATAMENTE
-   - Se evento está selecionado → mostre horários disponíveis IMEDIATAMENTE
+   - Se nome, motivo, cidade e bairro estão completos → mostre os eventos e DATAS disponíveis IMEDIATAMENTE
+   - Se evento está selecionado → peça diretamente para o usuário escolher uma DATA dentro do intervalo do evento
 
 3. **TOLERÂNCIA A ERROS**
    - Se o usuário repetir informação → reconheça brevemente ("Perfeito, já tenho isso") e continue
@@ -292,8 +256,8 @@ ${stateSummary}
    - Se o usuário corrigir, aceite a correção e continue
 
 5. **FLUXO DE FINALIZAÇÃO**
-   - Quando tiver: nome, motivo, cidade, bairro, evento → mostre horários disponíveis
-   - Quando o usuário escolher um horário → confirme e outpute JSON IMEDIATAMENTE
+   - Quando tiver: nome, motivo, cidade, bairro, evento → peça a DATA desejada dentro do intervalo do evento
+   - Quando o usuário escolher uma DATA válida → confirme e outpute JSON IMEDIATAMENTE
    - Não peça confirmação extra se já tem todas as informações
 
 EXEMPLO DE COMPORTAMENTO CORRETO:
@@ -309,15 +273,10 @@ ${citiesInfo || 'Nenhuma cidade configurada no momento.'}
 EVENTOS DISPONÍVEIS:
 ${eventsInfo || 'Nenhum evento agendado no momento.'}
 
-HORÁRIOS DISPONÍVEIS (próximos):
-${timeSlotsInfo || 'Nenhum horário disponível no momento.'}
-
-NOTA: Quando o usuário mencionar uma data/horário, você pode sugerir horários disponíveis da lista acima. Se o usuário escolher um horário específico, use o formato exato (data: YYYY-MM-DD, horário: HH:MM).
-
 QUANDO TODAS AS INFORMAÇÕES ESTIVEREM COMPLETAS:
 Você só deve outputar o JSON quando:
-1. Você coletou TODAS as 7 informações necessárias (verifique o estado acima)
-2. O usuário selecionou um horário disponível OU confirmou explicitamente o agendamento
+1. Você coletou TODAS as informações necessárias (verifique o estado acima)
+2. O usuário escolheu uma DATA válida dentro do intervalo do evento e confirmou o agendamento
 
 Quando essas condições forem atendidas:
 1. Responda ao usuário com uma mensagem natural de confirmação em português (ex: "Perfeito! Vou confirmar seu agendamento...")
@@ -331,19 +290,17 @@ Formato do JSON final (OBRIGATÓRIO - todos os campos devem estar preenchidos):
   "city": "Nome Exato da Cidade",
   "neighborhood": "Nome do Bairro",
   "event": "Local/Evento selecionado",
-  "date": "YYYY-MM-DD",
-  "time_slot": "HH:MM"
+  "date": "YYYY-MM-DD"
 }
 
 IMPORTANTE SOBRE O JSON:
 - O JSON deve estar em uma linha separada, após sua resposta natural
-- Use apenas quando tiver TODAS as 7 informações (verifique o "ESTADO ATUAL DA CONVERSA" acima)
+- Use apenas quando tiver TODAS as informações (verifique o "ESTADO ATUAL DA CONVERSA" acima)
 - Use os valores do "ESTADO ATUAL DA CONVERSA" como fonte primária para preencher o JSON
 - A data deve estar no formato YYYY-MM-DD (ex: 2025-12-15)
-- O horário deve estar no formato HH:MM (ex: 14:30)
 - Use os nomes exatos de cidade e evento como aparecem nas listas acima
 - NUNCA outpute JSON se faltar alguma informação no estado acima ou se o usuário não confirmou
-- Se o estado acima já tem todas as informações e o usuário escolheu um horário, outpute o JSON IMEDIATAMENTE`;
+- Se o estado acima já tem todas as informações e o usuário escolheu uma data válida, outpute o JSON IMEDIATAMENTE`;
 
   return systemPrompt;
 }
@@ -438,9 +395,6 @@ async function processConversation(userMessage, conversationHistory) {
       if (!bookingData.date && currentState.preferred_date) {
         bookingData.date = currentState.preferred_date;
       }
-      if (!bookingData.time_slot && currentState.preferred_time_slot) {
-        bookingData.time_slot = currentState.preferred_time_slot;
-      }
     }
     
     // Remove JSON from the reply if present
@@ -471,7 +425,7 @@ async function processConversation(userMessage, conversationHistory) {
  */
 function extractBookingData(content) {
   try {
-    // Try multiple patterns to find JSON
+    // Try multiple patterns to find JSON (DATE-ONLY, NO TIME FIELD)
     // Pattern 1: JSON object with full_name
     let jsonMatch = content.match(/\{[\s\S]*?"full_name"[\s\S]*?\}/);
     
@@ -512,7 +466,7 @@ function extractBookingData(content) {
       const parsed = JSON.parse(jsonStr);
       
       // Validate that it has all required fields and they're not empty
-      const requiredFields = ['full_name', 'reason_for_visit', 'city', 'neighborhood', 'event', 'date', 'time_slot'];
+      const requiredFields = ['full_name', 'reason_for_visit', 'city', 'neighborhood', 'event', 'date'];
       const hasAllFields = requiredFields.every(field => 
         parsed[field] && typeof parsed[field] === 'string' && parsed[field].trim().length > 0
       );
@@ -525,8 +479,7 @@ function extractBookingData(content) {
           city: parsed.city.trim(),
           neighborhood: parsed.neighborhood.trim(),
           event: parsed.event.trim(),
-          date: parsed.date.trim(),
-          time_slot: parsed.time_slot.trim()
+          date: parsed.date.trim()
         };
         
         console.log('[ChatGPT] Extracted booking data:', cleaned);

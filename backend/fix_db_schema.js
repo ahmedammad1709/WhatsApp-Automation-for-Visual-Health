@@ -83,6 +83,52 @@ async function fixSchema() {
         console.log('patients table exists.');
     }
 
+    // 4. Ensure appointments table exists (DATE-ONLY, NO TIME SLOTS)
+    console.log('Checking appointments table...');
+    const [appointmentsTable] = await connection.query("SHOW TABLES LIKE 'appointments'");
+    if (appointmentsTable.length === 0) {
+        console.log('appointments table missing. Creating...');
+        await connection.query(`
+            CREATE TABLE appointments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                patient_id INT NOT NULL,
+                event_id INT NOT NULL,
+                appointment_date DATE NOT NULL,
+                status VARCHAR(50) DEFAULT 'scheduled',
+                reminder_24h_sent TINYINT(1) NOT NULL DEFAULT 0,
+                reminder_24h_sent_at DATETIME NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (patient_id) REFERENCES patients(id),
+                FOREIGN KEY (event_id) REFERENCES events(id)
+            )
+        `);
+        console.log('✓ appointments table created (date-only, no time slots).');
+    } else {
+        console.log('appointments table exists. Ensuring schema is up to date...');
+        // Best-effort migration: drop time_slot_id and add appointment_date if needed
+        try {
+          const [cols] = await connection.query("SHOW COLUMNS FROM appointments LIKE 'time_slot_id'");
+          if (cols.length > 0) {
+            console.log('Removing obsolete time_slot_id column from appointments...');
+            await connection.query('ALTER TABLE appointments DROP COLUMN time_slot_id');
+          }
+        } catch (e) {
+          console.warn('Could not drop time_slot_id (may not exist):', e.message);
+        }
+        try {
+          const [cols] = await connection.query("SHOW COLUMNS FROM appointments LIKE 'appointment_date'");
+          if (cols.length === 0) {
+            console.log('Adding appointment_date column to appointments...');
+            await connection.query("ALTER TABLE appointments ADD COLUMN appointment_date DATE NOT NULL AFTER event_id");
+          }
+        } catch (e) {
+          console.warn('Could not ensure appointment_date column:', e.message);
+        }
+    }
+
+    // 5. Remove legacy time_slots table if it still exists
+    console.log('Dropping legacy time_slots table if present...');
+    await connection.query('DROP TABLE IF EXISTS time_slots');
     // 4. Ensure appointments table exists
     console.log('Checking appointments table...');
     const [appointmentsTable] = await connection.query("SHOW TABLES LIKE 'appointments'");

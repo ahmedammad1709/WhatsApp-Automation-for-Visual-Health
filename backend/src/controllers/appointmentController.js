@@ -2,12 +2,12 @@ import { ok, error } from '../utils/response.js';
 import * as AppointmentService from '../services/appointmentService.js';
 
 async function create(req, res) {
-  const { patient_id, event_id, time_slot_id, status } = req.body || {};
-  if (!patient_id || !event_id || !time_slot_id) {
-    return res.status(400).json(error('patient_id, event_id, time_slot_id are required'));
+  const { patient_id, event_id, appointment_date, status } = req.body || {};
+  if (!patient_id || !event_id || !appointment_date) {
+    return res.status(400).json(error('patient_id, event_id, appointment_date are required'));
   }
   try {
-    const created = await AppointmentService.createAppointment({ patient_id, event_id, time_slot_id, status });
+    const created = await AppointmentService.createAppointment({ patient_id, event_id, appointment_date, status });
     res.status(201).json(ok(created, 'Appointment created'));
   } catch (e) {
     res.status(500).json(error('Failed to create appointment'));

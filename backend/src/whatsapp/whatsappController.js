@@ -90,8 +90,13 @@ async function handleWebhook(req, res) {
           await WhatsAppService.sendOptions(from, result.header || result.title, result.body || result.title, result.options, PHONE_ID);
           await WhatsAppService.logMessage(from, 'out', result.body || result.title);
         } else if (result.type === 'final') {
-          // Final confirmation message
-          const confirmationText = result.text || `Agendamento confirmado para ${result.appointment?.slot_date} às ${result.appointment?.slot_time}`;
+          // Final confirmation message (DATE-ONLY)
+          const dateStr = result.appointment?.appointment_date
+            ? new Date(result.appointment.appointment_date).toLocaleDateString('pt-BR')
+            : null;
+          const confirmationText = result.text || (dateStr
+            ? `Sua consulta está confirmada para o dia ${dateStr}, em ${result.appointment?.location}, ${result.appointment?.city_name}.`
+            : 'Sua consulta está confirmada.');
           await WhatsAppService.sendText(from, confirmationText, PHONE_ID);
           await WhatsAppService.logMessage(from, 'out', confirmationText);
         }

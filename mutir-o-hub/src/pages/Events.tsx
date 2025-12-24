@@ -73,13 +73,6 @@ export default function Events() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const startHour = String(form.get('startHour')).padStart(2, '0');
-    const startMinute = String(form.get('startMinute')).padStart(2, '0');
-    const startAmPm = form.get('startAmPm');
-    
-    const endHour = String(form.get('endHour')).padStart(2, '0');
-    const endMinute = String(form.get('endMinute')).padStart(2, '0');
-    const endAmPm = form.get('endAmPm');
 
     const payload = {
       city_id: String(form.get('city_id')),
@@ -88,8 +81,6 @@ export default function Events() {
       end_date: String(form.get('end_date')),
       max_capacity: Number(form.get('max_capacity')),
       notes: String(form.get('notes') || ''),
-      startTime: `${startHour}:${startMinute} ${startAmPm}`,
-      endTime: `${endHour}:${endMinute} ${endAmPm}`,
     };
     const created = await createEvent(payload);
     setEvents([created, ...events]);
@@ -177,76 +168,6 @@ export default function Events() {
                   <div className="space-y-2">
                     <Label htmlFor="end_date">End Date</Label>
                     <Input id="end_date" name="end_date" type="date" defaultValue={formatDate(editingEvent?.end_date)} required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Start Time</Label>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        name="startHour"
-                        type="number"
-                        min="1"
-                        max="12"
-                        placeholder="HH"
-                        className="w-full"
-                        required
-                        onKeyDown={(e) => ["e", "E", "+", "-", "."].includes(e.key) && e.preventDefault()}
-                      />
-                      <span className="font-bold">:</span>
-                      <Input
-                        name="startMinute"
-                        type="number"
-                        min="0"
-                        max="59"
-                        placeholder="MM"
-                        className="w-full"
-                        required
-                        onKeyDown={(e) => ["e", "E", "+", "-", "."].includes(e.key) && e.preventDefault()}
-                      />
-                      <select
-                        name="startAmPm"
-                        className="h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        required
-                      >
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>End Time</Label>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        name="endHour"
-                        type="number"
-                        min="1"
-                        max="12"
-                        placeholder="HH"
-                        className="w-full"
-                        required
-                        onKeyDown={(e) => ["e", "E", "+", "-", "."].includes(e.key) && e.preventDefault()}
-                      />
-                      <span className="font-bold">:</span>
-                      <Input
-                        name="endMinute"
-                        type="number"
-                        min="0"
-                        max="59"
-                        placeholder="MM"
-                        className="w-full"
-                        required
-                        onKeyDown={(e) => ["e", "E", "+", "-", "."].includes(e.key) && e.preventDefault()}
-                      />
-                      <select
-                        name="endAmPm"
-                        className="h-10 w-20 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        required
-                      >
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">

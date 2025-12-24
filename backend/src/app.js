@@ -4,7 +4,6 @@ import 'dotenv/config';
 
 import cityRoutes from './routes/cityRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
-import timeSlotRoutes from './routes/timeSlotRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import whatsappRoutes from './routes/whatsappRoutes.js';
@@ -33,9 +32,6 @@ app.use('/cities', cityRoutes);
 
 app.use('/api/events', eventRoutes);
 app.use('/events', eventRoutes);
-
-app.use('/api/time-slots', timeSlotRoutes);
-app.use('/time-slots', timeSlotRoutes);
 
 app.use('/api/patients', patientRoutes);
 app.use('/patients', patientRoutes);
