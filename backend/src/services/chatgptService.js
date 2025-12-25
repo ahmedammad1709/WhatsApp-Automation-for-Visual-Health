@@ -77,8 +77,7 @@ Retorne JSON APENAS com os campos que foram FORNECIDOS:
   "city": "cidade se fornecida (use nome exato da lista)" | null,
   "neighborhood": "bairro se fornecido" | null,
   "selected_event_or_clinic": "evento/local se selecionado (use nome exato da lista)" | null,
-  "preferred_date": "data se fornecida (formato YYYY-MM-DD)" | null,
-  "preferred_time_slot": "horário se fornecido (formato HH:MM)" | null
+  "preferred_date": "data se fornecida (formato YYYY-MM-DD)" | null
 }
 
 IMPORTANTE: Seja conservador. Só retorne um valor se tiver CERTEZA de que o usuário forneceu essa informação.`;
@@ -240,7 +239,7 @@ ${stateSummary}
    - Identifique quais campos estão faltando (comparando com o estado acima)
    - Pergunte APENAS pelo próximo campo que falta
    - Avance agressivamente em direção ao agendamento
-   - Se nome, motivo, cidade e bairro estão completos → mostre os eventos e DATAS disponíveis IMEDIATAMENTE
+   - Se nome, motivo e cidade estão completos → mostre os eventos e DATAS disponíveis IMEDIATAMENTE
    - Se evento está selecionado → peça diretamente para o usuário escolher uma DATA dentro do intervalo do evento
 
 3. **TOLERÂNCIA A ERROS**
@@ -263,7 +262,7 @@ ${stateSummary}
 EXEMPLO DE COMPORTAMENTO CORRETO:
 - Estado mostra: Nome: João, Cidade: São Paulo
 - Você NÃO pergunta nome ou cidade novamente
-- Você identifica que falta: motivo, bairro, evento, data, horário
+- Você identifica que falta: motivo, bairro, evento, data
 - Você pergunta APENAS pelo motivo (ou bairro, se o motivo já foi mencionado)
 - Você avança para o próximo passo SEMPRE
 

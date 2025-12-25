@@ -233,11 +233,13 @@ async function handleIncomingMessage(phone, text) {
         console.error('[BOOKING] Error processing booking:', bookingError);
         
         let errorMsg = reply;
-        if (bookingError.message === 'SLOT_FULL') {
-          errorMsg = `${reply}\n\n⚠️ Desculpe, esse horário acabou de ser preenchido. Poderia escolher outro horário?`;
+        if (bookingError.message === 'EVENT_FULL') {
+          errorMsg = `${reply}\n\n⚠️ Desculpe, as vagas para esta data acabaram. Poderia escolher outra data?`;
         } else if (bookingError.message === 'ALREADY_BOOKED') {
-          errorMsg = `${reply}\n\n⚠️ Parece que você já tem um agendamento para este evento.`;
+          errorMsg = `${reply}\n\n⚠️ Parece que você já tem um agendamento para este evento nesta data.`;
           await markSessionComplete(phone);
+        } else if (bookingError.message === 'DATE_OUT_OF_RANGE') {
+          errorMsg = `${reply}\n\n⚠️ A data escolhida está fora do período do evento. Por favor, escolha uma data válida.`;
         } else if (bookingError.message.includes('not found') || bookingError.message.includes('No available')) {
           errorMsg = `${reply}\n\n⚠️ ${bookingError.message}. Poderia verificar as opções disponíveis?`;
         } else {
