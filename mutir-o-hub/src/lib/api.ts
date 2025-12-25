@@ -114,4 +114,15 @@ export const deleteCity = async (id: number | string) => {
   return response.data?.data;
 };
 
+// Appointments API
+export const getAppointments = async () => {
+  const response = await api.get('/api/appointments');
+  return response.data?.data ?? [];
+};
+
+export const updateAppointmentStatus = async (id: string | number, status: string) => {
+  const response = await api.patch(`/api/appointments/${id}/status`, { status });
+  return response.data;
+};
+
 export default api;

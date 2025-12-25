@@ -55,7 +55,7 @@ export default function Appointments() {
     try {
       const data = await getCities();
       const cityNames = [...new Set(data.map((c: any) => c.name))];
-      setCities(cityNames);
+      setCities(cityNames as string[]);
     } catch (error) {
       console.error('Error loading cities:', error);
     }
@@ -89,16 +89,10 @@ export default function Appointments() {
     { key: 'city_name', label: 'City' },
     { key: 'neighborhood', label: 'Neighborhood' },
     {
-      key: 'slot_date',
+      key: 'appointment_date',
       label: 'Date',
       render: (date: string) => date ? new Date(date).toLocaleDateString('pt-BR') : '-',
     },
-    {
-      key: 'slot_time',
-      label: 'Time',
-      render: (time: string) => time || '-',
-    },
-    { key: 'location', label: 'Location' },
     {
       key: 'status',
       label: 'Status',
