@@ -61,6 +61,17 @@ export const getReportCharts = async () => {
   return response.data;
 };
 
+// Chatbot Settings API
+export const getChatbotSettings = async () => {
+  const response = await api.get('/api/chatbot-settings');
+  return response.data;
+};
+
+export const updateChatbotSettings = async (settings: { conversation_prompt: string }) => {
+  const response = await api.post('/api/chatbot-settings', settings);
+  return response.data;
+};
+
 // Events API
 export const getEvents = async (params?: any) => {
   const response = await api.get('/api/events', { params });
@@ -101,100 +112,6 @@ export const updateCity = async (id: number | string, city: { name: string; stat
 export const deleteCity = async (id: number | string) => {
   const response = await api.delete(`/api/cities/${id}`);
   return response.data?.data;
-};
-
-// Patients API
-export const getPatients = async () => {
-  const response = await api.get('/api/patients');
-  return response.data?.data ?? [];
-};
-
-export const getPatientById = async (id: string | number) => {
-  const response = await api.get(`/api/patients/${id}`);
-  return response.data?.data;
-};
-
-export const createPatient = async (patientData: any) => {
-  const response = await api.post('/api/patients', patientData);
-  return response.data?.data;
-};
-
-// Conversation Logs API
-export const getConversationLogs = async () => {
-  const response = await api.get('/api/conversation-logs');
-  return response.data?.data ?? [];
-};
-
-export const getConversationLogsByPhone = async (phone: string) => {
-  const response = await api.get(`/api/conversation-logs/phone/${phone}`);
-  return response.data?.data ?? [];
-};
-
-// Appointments API
-export const getAppointments = async (params?: any) => {
-  const response = await api.get('/api/appointments', { params });
-  return response.data?.data ?? [];
-};
-
-export const getAppointmentById = async (id: string | number) => {
-  const response = await api.get(`/api/appointments/${id}`);
-  return response.data?.data;
-};
-
-export const createAppointment = async (appointmentData: any) => {
-  const response = await api.post('/api/appointments', appointmentData);
-  return response.data?.data;
-};
-
-export const updateAppointmentStatus = async (id: string | number, status: string) => {
-  const response = await api.patch(`/api/appointments/${id}/status`, { status });
-  return response.data;
-};
-
-export const deleteAppointment = async (id: string | number) => {
-  const response = await api.delete(`/api/appointments/${id}`);
-  return response.data;
-};
-
-export const markAttended = async (id: string) => {
-  return updateAppointmentStatus(id, 'completed');
-};
-
-export const exportAppointments = async (params?: any) => {
-  const response = await api.get('/api/appointments/export', {
-    params,
-    responseType: 'blob',
-  });
-  return response.data;
-};
-
-// Reports API
-export const getDailyReport = async (date: string) => {
-  const response = await api.get(`/api/reports/daily/${date}`);
-  return response.data;
-};
-
-export const getDateRangeReport = async (startDate: string, endDate: string) => {
-  const response = await api.get('/api/reports/range', {
-    params: { startDate, endDate },
-  });
-  return response.data;
-};
-
-export const sendReportToWhatsapp = async (reportId: string) => {
-  const response = await api.post('/api/reports/send-whatsapp', { reportId });
-  return response.data;
-};
-
-// Settings API
-export const getSettings = async () => {
-  const response = await api.get('/api/settings');
-  return response.data;
-};
-
-export const updateSettings = async (settings: any) => {
-  const response = await api.put('/api/settings', settings);
-  return response.data;
 };
 
 export default api;

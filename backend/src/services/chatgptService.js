@@ -175,6 +175,7 @@ async function buildSystemPrompt(stateSummary = '') {
   // Fetch available cities and events from database
   let citiesInfo = [];
   let eventsInfo = [];
+  let userPrompt = '';
   
   try {
     const [cities] = await pool.query('SELECT id, name, state FROM cities ORDER BY name ASC');
@@ -192,11 +193,19 @@ async function buildSystemPrompt(stateSummary = '') {
       const endDate = new Date(e.end_date).toLocaleDateString('pt-BR');
       return `- ${e.location} em ${e.city_name} (${startDate} a ${endDate})`;
     }).join('\n');
+
+    // Fetch active chatbot prompt from settings
+    const [settings] = await pool.query('SELECT conversation_prompt FROM chatbot_settings WHERE is_active = 1 ORDER BY updated_at DESC LIMIT 1');
+    if (settings.length > 0 && settings[0].conversation_prompt) {
+      userPrompt = settings[0].conversation_prompt;
+    }
   } catch (error) {
     console.error('[ChatGPT] Error fetching context data:', error);
   }
 
-  const systemPrompt = `Você é uma assistente inteligente, empática e profissional do "Instituto Luz no Caminho", uma clínica de saúde visual.
+  // Default personality if not set in DB
+  if (!userPrompt) {
+    userPrompt = `Você é uma assistente inteligente, empática e profissional do "Instituto Luz no Caminho", uma clínica de saúde visual.
 
 SUA PERSONALIDADE:
 - Seja natural, calorosa e humana - nunca soe robótica ou repetitiva
@@ -211,7 +220,10 @@ Ajudar o usuário a agendar uma consulta, mas de forma natural e conversacional.
 - Explicar serviços oferecidos
 - Listar cidades ou eventos disponíveis
 - Esclarecer dúvidas sobre saúde visual
-- Responder com empatia a sintomas ou preocupações
+- Responder com empatia a sintomas ou preocupações`;
+  }
+
+  const systemPrompt = `${userPrompt}
 
 INFORMAÇÕES NECESSÁRIAS (coletar gradualmente):
 Você precisa coletar estas informações (sem horário):

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,13 +6,47 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { getChatbotSettings, updateChatbotSettings } from '../lib/api';
 
 // Purpose: Settings and configuration page
 // Manage API keys, WhatsApp settings, and AI preferences
 
 export default function Settings() {
-  const handleSave = () => {
-    toast.success('Settings saved successfully');
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const data = await getChatbotSettings();
+      if (data && data.conversation_prompt) {
+        setPrompt(data.conversation_prompt);
+      }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+      toast.error('Failed to load settings');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!prompt.trim()) {
+      toast.error('Prompt cannot be empty');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await updateChatbotSettings({ conversation_prompt: prompt });
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,9 +86,15 @@ export default function Settings() {
               <Textarea
                 id="ai-style"
                 placeholder="Define the AI's personality and tone..."
-                defaultValue="Seja profissional, amigável e empático. Priorize a clareza e a precisão das informações de saúde."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
                 rows={8}
               />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={loading}>
+                {loading ? 'Saving...' : 'Save Settings'}
+              </Button>
             </div>
           </CardContent>
         </Card>
