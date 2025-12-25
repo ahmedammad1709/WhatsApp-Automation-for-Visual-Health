@@ -50,6 +50,17 @@ export const getDashboardCharts = async () => {
   return response.data;
 };
 
+// Reports API
+export const getReportStats = async () => {
+  const response = await api.get('/api/reports/stats');
+  return response.data;
+};
+
+export const getReportCharts = async () => {
+  const response = await api.get('/api/reports/charts');
+  return response.data;
+};
+
 // Events API
 export const getEvents = async (params?: any) => {
   const response = await api.get('/api/events', { params });

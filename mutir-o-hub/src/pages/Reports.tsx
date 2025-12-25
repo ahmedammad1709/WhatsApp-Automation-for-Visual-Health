@@ -1,10 +1,11 @@
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Send, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { sampleChartData } from '@/lib/sampleData';
 import { toast } from 'sonner';
+import { getReportStats, getReportCharts } from '@/lib/api';
 
 // Purpose: Reports and analytics page
 // Shows comprehensive reports with charts and WhatsApp integration
@@ -12,15 +13,59 @@ import { toast } from 'sonner';
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--warning))', 'hsl(var(--info))'];
 
 export default function Reports() {
+  const [stats, setStats] = useState({
+    totalAppointments: 0,
+    activeEvents: 0,
+    citiesCovered: 0,
+    conversionRate: 0
+  });
+
+  const [charts, setCharts] = useState({
+    appointmentsByCity: [],
+    appointmentsByStatus: [],
+    dailyPerformance: []
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsData, chartsData] = await Promise.all([
+          getReportStats(),
+          getReportCharts()
+        ]);
+        setStats(statsData);
+        setCharts(chartsData);
+      } catch (error) {
+        console.error('Failed to fetch report data:', error);
+        toast.error('Failed to load report data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const handleSendToWhatsApp = () => {
     toast.success('Report sent to WhatsApp manager');
   };
 
-  const conversionData = sampleChartData.conversionBySource.map(item => ({
-    name: item.source,
-    value: item.conversions,
-    total: item.total,
+  const statusData = charts.appointmentsByStatus.map(item => ({
+    name: item.status,
+    value: item.value
   }));
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-full">
+          <p>Loading reports...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -49,25 +94,25 @@ export default function Reports() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold">421</div>
+              <div className="text-2xl font-bold">{stats.totalAppointments}</div>
               <div className="text-sm text-muted-foreground">Total Appointments</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold">87%</div>
+              <div className="text-2xl font-bold">{stats.conversionRate}%</div>
               <div className="text-sm text-muted-foreground">Average Conversion</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{stats.activeEvents}</div>
               <div className="text-sm text-muted-foreground">Active Events</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">{stats.citiesCovered}</div>
               <div className="text-sm text-muted-foreground">Cities Covered</div>
             </CardContent>
           </Card>
@@ -78,11 +123,11 @@ export default function Reports() {
           {/* Appointments by City */}
           <Card>
             <CardHeader>
-              <CardTitle>Appointments Distribution</CardTitle>
+              <CardTitle>Appointments Distribution (by City)</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={sampleChartData.appointmentsByCity}>
+                <BarChart data={charts.appointmentsByCity}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="city" className="text-xs" />
                   <YAxis className="text-xs" />
@@ -99,16 +144,16 @@ export default function Reports() {
             </CardContent>
           </Card>
 
-          {/* Lead Source Performance */}
+          {/* Appointments by Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Lead Source Performance</CardTitle>
+              <CardTitle>Appointments by Status</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
-                    data={conversionData}
+                    data={statusData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -117,7 +162,7 @@ export default function Reports() {
                     fill="hsl(var(--primary))"
                     dataKey="value"
                   >
-                    {conversionData.map((entry, index) => (
+                    {statusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -138,24 +183,24 @@ export default function Reports() {
         {/* Daily Performance Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Performance</CardTitle>
+            <CardTitle>Recent Performance (Last 5 Days)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {['Today', 'Yesterday', '2 days ago', '3 days ago', '4 days ago'].map((day, idx) => (
-                <div key={day} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              {charts.dailyPerformance.map((dayData, idx) => (
+                <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div>
-                    <div className="font-medium">{day}</div>
+                    <div className="font-medium">{dayData.day} ({new Date(dayData.date).toLocaleDateString()})</div>
                     <div className="text-sm text-muted-foreground">
-                      {47 - idx * 3} appointments • {38 - idx * 2} confirmed
+                      {dayData.totalAppointments} appointments • {dayData.confirmedAppointments} confirmed
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-success">
-                      {81 - idx * 2}% conversion
+                      {dayData.conversionRate}% conversion
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {125 + idx * 5} capacity remaining
+                      {dayData.remainingCapacity} capacity remaining
                     </div>
                   </div>
                 </div>
