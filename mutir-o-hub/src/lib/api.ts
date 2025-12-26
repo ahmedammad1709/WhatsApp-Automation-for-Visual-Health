@@ -125,4 +125,16 @@ export const updateAppointmentStatus = async (id: string | number, status: strin
   return response.data;
 };
 
+// Conversation Logs API
+export const getConversationLogs = async () => {
+  const response = await api.get('/api/conversation-logs');
+  return response.data?.data ?? [];
+};
+
+// Patients API
+export const getPatients = async () => {
+  const response = await api.get('/api/patients');
+  return response.data?.data ?? [];
+};
+
 export default api;
