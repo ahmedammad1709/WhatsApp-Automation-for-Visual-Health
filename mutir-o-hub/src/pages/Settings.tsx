@@ -100,7 +100,7 @@ export default function Settings() {
         </Card>
 
         {/* API Configuration */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>API Configuration</CardTitle>
             <CardDescription>
@@ -144,7 +144,7 @@ export default function Settings() {
               />
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
 
         {/* Save Button */}

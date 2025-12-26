@@ -4,7 +4,7 @@ import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { getEvents, createEvent, deleteEvent, getCities } from '@/lib/api';
+import { getEvents, createEvent, updateEvent, deleteEvent, getCities } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ export default function Events() {
   const [cities, setCities] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [selectedStartDate, setSelectedStartDate] = useState('');
 
   const formatDate = (val: any) => {
     if (!val) return '';
@@ -47,6 +48,14 @@ export default function Events() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (editingEvent) {
+      setSelectedStartDate(formatDate(editingEvent.start_date));
+    } else {
+      setSelectedStartDate('');
+    }
+  }, [editingEvent, isDialogOpen]);
 
   const handleCreateEvent = () => {
     setEditingEvent(null);
@@ -74,16 +83,37 @@ export default function Events() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
 
+    const startDateStr = String(form.get('start_date'));
+    const endDateStr = String(form.get('end_date'));
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+
+    if (!editingEvent && startDateStr < todayStr) {
+       toast.error('Start date cannot be in the past for new events');
+       return;
+    }
+
+    if (endDateStr < startDateStr) {
+      toast.error('End date cannot be before start date');
+      return;
+    }
+
     const payload = {
       city_id: String(form.get('city_id')),
       location: String(form.get('location')),
-      start_date: String(form.get('start_date')),
-      end_date: String(form.get('end_date')),
+      start_date: startDateStr,
+      end_date: endDateStr,
       max_capacity: Number(form.get('max_capacity')),
       notes: String(form.get('notes') || ''),
     };
-    const created = await createEvent(payload);
-    setEvents([created, ...events]);
+
+    if (editingEvent) {
+      await updateEvent(editingEvent.id, payload);
+      setEvents(events.map((ev) => (ev.id === editingEvent.id ? { ...ev, ...payload } : ev)));
+    } else {
+      const created = await createEvent(payload);
+      setEvents([created, ...events]);
+    }
+
     setIsDialogOpen(false);
     toast.success(editingEvent ? 'Event updated successfully' : 'Event created successfully');
   };
@@ -163,11 +193,26 @@ export default function Events() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="start_date">Start Date</Label>
-                    <Input id="start_date" name="start_date" type="date" defaultValue={formatDate(editingEvent?.start_date)} required />
+                    <Input 
+                      id="start_date" 
+                      name="start_date" 
+                      type="date" 
+                      defaultValue={formatDate(editingEvent?.start_date)}
+                      min={editingEvent ? undefined : new Date().toLocaleDateString('en-CA')}
+                      onChange={(e) => setSelectedStartDate(e.target.value)}
+                      required 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="end_date">End Date</Label>
-                    <Input id="end_date" name="end_date" type="date" defaultValue={formatDate(editingEvent?.end_date)} required />
+                    <Input 
+                      id="end_date" 
+                      name="end_date" 
+                      type="date" 
+                      defaultValue={formatDate(editingEvent?.end_date)}
+                      min={selectedStartDate}
+                      required 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
