@@ -1,37 +1,42 @@
 import pool from '../config/db.js';
+import { sendText } from '../whatsapp/sendMessage.js';
+
+const fetchStats = async () => {
+  const today = new Date().toISOString().split('T')[0];
+
+  // 1. Total Appointments (All time)
+  const [totalApptsResult] = await pool.query('SELECT COUNT(*) as count FROM appointments');
+  const totalAppointments = totalApptsResult[0].count;
+
+  // 2. Active Events (End date >= today)
+  const [activeEventsResult] = await pool.query('SELECT COUNT(*) as count FROM events WHERE end_date >= ?', [today]);
+  const activeEvents = activeEventsResult[0].count;
+
+  // 3. Cities Covered (Cities with at least one event)
+  const [citiesResult] = await pool.query('SELECT COUNT(DISTINCT city_id) as count FROM events');
+  const citiesCovered = citiesResult[0].count;
+
+  // 4. Average Conversion (Unique Patients / Unique WhatsApp Contacts)
+  // This is a rough proxy for "Lead to Patient" conversion
+  const [patientsResult] = await pool.query('SELECT COUNT(*) as count FROM patients');
+  const [contactsResult] = await pool.query('SELECT COUNT(DISTINCT patient_phone) as count FROM conversation_logs');
+  
+  const patientsCount = patientsResult[0].count;
+  const contactsCount = contactsResult[0].count;
+  const conversionRate = contactsCount > 0 ? ((patientsCount / contactsCount) * 100).toFixed(1) : 0;
+
+  return {
+    totalAppointments,
+    activeEvents,
+    citiesCovered,
+    conversionRate
+  };
+};
 
 export const getReportStats = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-
-    // 1. Total Appointments (All time)
-    const [totalApptsResult] = await pool.query('SELECT COUNT(*) as count FROM appointments');
-    const totalAppointments = totalApptsResult[0].count;
-
-    // 2. Active Events (End date >= today)
-    const [activeEventsResult] = await pool.query('SELECT COUNT(*) as count FROM events WHERE end_date >= ?', [today]);
-    const activeEvents = activeEventsResult[0].count;
-
-    // 3. Cities Covered (Cities with at least one event)
-    const [citiesResult] = await pool.query('SELECT COUNT(DISTINCT city_id) as count FROM events');
-    const citiesCovered = citiesResult[0].count;
-
-    // 4. Average Conversion (Unique Patients / Unique WhatsApp Contacts)
-    // This is a rough proxy for "Lead to Patient" conversion
-    const [patientsResult] = await pool.query('SELECT COUNT(*) as count FROM patients');
-    const [contactsResult] = await pool.query('SELECT COUNT(DISTINCT whatsapp_number) as count FROM conversation_logs');
-    
-    const patientsCount = patientsResult[0].count;
-    const contactsCount = contactsResult[0].count;
-    const conversionRate = contactsCount > 0 ? ((patientsCount / contactsCount) * 100).toFixed(1) : 0;
-
-    res.json({
-      totalAppointments,
-      activeEvents,
-      citiesCovered,
-      conversionRate
-    });
-
+    const stats = await fetchStats();
+    res.json(stats);
   } catch (error) {
     console.error('Error fetching report stats:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -150,7 +155,7 @@ export const sendReportToWhatsApp = async (req, res) => {
 
     message += `_Relatório gerado em ${new Date().toLocaleString('pt-BR')}_`;
 
-    await sendText(phoneNumber, message, process.env.WHATSAPP_PHONE_NUMBER_ID);
+    await sendText(phoneNumber, message);
 
     res.json({ success: true, message: 'Report sent successfully' });
 

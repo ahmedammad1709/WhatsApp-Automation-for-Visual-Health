@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Send, Calendar } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { toast } from 'sonner';
 import { getReportStats, getReportCharts, sendReportToWhatsApp } from '@/lib/api';
@@ -88,10 +88,6 @@ export default function Reports() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
-              <Calendar className="w-4 h-4 mr-2" />
-              Select Date Range
-            </Button>
             <Button onClick={handleSendToWhatsApp}>
               <Send className="w-4 h-4 mr-2" />
               Send to WhatsApp
