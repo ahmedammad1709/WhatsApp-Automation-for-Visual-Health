@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Eye, Search } from 'lucide-react';
 import { getPatients } from '@/lib/api';
 import { toast } from 'sonner';
 import {
@@ -16,6 +17,7 @@ export default function Patients() {
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadPatients();
@@ -62,6 +64,19 @@ export default function Patients() {
     },
   ];
 
+  const filteredPatients = patients.filter((patient) => {
+    const query = searchQuery.toLowerCase();
+    const fullName = patient.full_name?.toLowerCase() || '';
+    const whatsapp = patient.whatsapp_number || '';
+    const city = patient.city?.toLowerCase() || '';
+    
+    return (
+      fullName.includes(query) ||
+      whatsapp.includes(query) ||
+      city.includes(query)
+    );
+  });
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -70,9 +85,20 @@ export default function Patients() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Patients</h1>
             <p className="text-muted-foreground mt-1">
-              Showing {patients.length} patients
+              Showing {filteredPatients.length} patients
             </p>
           </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search patients..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {/* Patients Table */}
@@ -81,7 +107,7 @@ export default function Patients() {
         ) : (
           <DataTable
             columns={columns}
-            data={patients}
+            data={filteredPatients}
             emptyMessage="No patients found"
           />
         )}

@@ -3,7 +3,7 @@ const { useEffect, useState } = React;
 import Layout from '@/components/Layout';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { getCities, createCity, updateCity, deleteCity } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ export default function Cities() {
   const [cities, setCities] = useState<any[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCity, setEditingCity] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -83,6 +84,14 @@ export default function Cities() {
     },
   ];
 
+  const filteredCities = cities.filter((city) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      city.name.toLowerCase().includes(query) ||
+      city.state.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -120,7 +129,18 @@ export default function Cities() {
           </Dialog>
         </div>
 
-        <DataTable columns={columns} data={cities} emptyMessage="No cities found. Add your first city!" />
+        {/* Search Bar */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search cities..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <DataTable columns={columns} data={filteredCities} emptyMessage="No cities found. Add your first city!" />
       </div>
     </Layout>
   );

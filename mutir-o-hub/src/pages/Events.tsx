@@ -3,7 +3,7 @@ import Layout from '@/components/Layout';
 import DataTable from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { getEvents, createEvent, updateEvent, deleteEvent, getCities } from '@/lib/api';
 import {
   Dialog,
@@ -26,6 +26,7 @@ export default function Events() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [selectedStartDate, setSelectedStartDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const formatDate = (val: any) => {
     if (!val) return '';
@@ -150,6 +151,20 @@ export default function Events() {
     },
   ];
 
+  const filteredEvents = events.filter((event) => {
+    const city = cities.find((c) => c.id === event.city_id);
+    const cityName = city ? city.name.toLowerCase() : '';
+    const location = event.location?.toLowerCase() || '';
+    const notes = event.notes?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
+
+    return (
+      cityName.includes(query) ||
+      location.includes(query) ||
+      notes.includes(query)
+    );
+  });
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -232,11 +247,22 @@ export default function Events() {
           </Dialog>
         </div>
 
+        {/* Search Bar */}
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search events..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
         {/* Events Table */}
         <DataTable
           columns={columns}
-          data={events}
-          emptyMessage="No events found. Create your first event!"
+          data={filteredEvents}
+          emptyMessage="No events found."
         />
       </div>
     </Layout>

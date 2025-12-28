@@ -20,15 +20,8 @@ export default function Layout({ children }: LayoutProps) {
         {/* Top Navigation Bar */}
         <header className="h-16 border-b border-border bg-card sticky top-0 z-10 shadow-sm">
           <div className="h-full px-6 flex items-center justify-between">
-            {/* Search */}
+            {/* Search - Removed */}
             <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  className="pl-10 bg-background"
-                />
-              </div>
             </div>
 
             {/* Right Side Actions */}
