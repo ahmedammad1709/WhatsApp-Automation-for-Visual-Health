@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Send, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { toast } from 'sonner';
-import { getReportStats, getReportCharts } from '@/lib/api';
+import { getReportStats, getReportCharts, sendReportToWhatsApp } from '@/lib/api';
 
 // Purpose: Reports and analytics page
 // Shows comprehensive reports with charts and WhatsApp integration
@@ -48,8 +48,17 @@ export default function Reports() {
     fetchData();
   }, []);
 
-  const handleSendToWhatsApp = () => {
-    toast.success('Report sent to WhatsApp manager');
+  const handleSendToWhatsApp = async () => {
+    try {
+      setLoading(true);
+      await sendReportToWhatsApp('558892808617');
+      toast.success('Report sent to WhatsApp manager (558892808617)');
+    } catch (error) {
+      console.error('Failed to send report:', error);
+      toast.error('Failed to send report to WhatsApp');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const statusData = charts.appointmentsByStatus.map(item => ({

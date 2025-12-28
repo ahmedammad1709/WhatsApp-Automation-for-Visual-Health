@@ -79,9 +79,7 @@ export const getReportCharts = async (req, res) => {
       const total = appts[0].total;
       const confirmed = appts[0].confirmed || 0;
       
-      // Calculate capacity for this date (Sum of capacities of events active on this date)
-      // Note: This is simplified. Ideally we'd subtract existing bookings, but "remaining capacity" usually implies available slots.
-      // Let's calculate "Total Capacity" for events active on this date
+      // Calculate capacity for this date
       const [capacityResult] = await pool.query(
         `SELECT SUM(max_capacity) as total_cap 
          FROM events 
@@ -103,12 +101,61 @@ export const getReportCharts = async (req, res) => {
 
     res.json({
       appointmentsByCity: byCity,
-      appointmentsByStatus: byStatus, // For Pie Chart
-      dailyPerformance // For Table
+      appointmentsByStatus: byStatus,
+      dailyPerformance: dailyPerformance.reverse()
     });
 
   } catch (error) {
     console.error('Error fetching report charts:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const sendReportToWhatsApp = async (req, res) => {
+  const { phoneNumber } = req.body;
+  
+  if (!phoneNumber) {
+    return res.status(400).json({ error: 'Phone number is required' });
+  }
+
+  try {
+    const stats = await fetchStats();
+    
+    // Quick fetch for charts data needed for report
+    const [byCity] = await pool.query(`
+      SELECT c.name as city, COUNT(a.id) as appointments
+      FROM appointments a
+      JOIN events e ON a.event_id = e.id
+      JOIN cities c ON e.city_id = c.id
+      GROUP BY c.name
+      ORDER BY appointments DESC
+      LIMIT 5
+    `);
+
+    let message = `📊 *Relatório do Visual Health* 📊\n\n`;
+    
+    message += `📅 *Resumo Geral*\n`;
+    message += `• Total de Agendamentos: ${stats.totalAppointments}\n`;
+    message += `• Eventos Ativos: ${stats.activeEvents}\n`;
+    message += `• Cidades Atendidas: ${stats.citiesCovered}\n`;
+    message += `• Taxa de Conversão: ${stats.conversionRate}%\n\n`;
+    
+    if (byCity.length > 0) {
+      message += `📍 *Top Cidades (Agendamentos)*\n`;
+      byCity.forEach((item, index) => {
+        message += `${index + 1}. ${item.city}: ${item.appointments}\n`;
+      });
+      message += `\n`;
+    }
+
+    message += `_Relatório gerado em ${new Date().toLocaleString('pt-BR')}_`;
+
+    await sendText(phoneNumber, message, process.env.WHATSAPP_PHONE_NUMBER_ID);
+
+    res.json({ success: true, message: 'Report sent successfully' });
+
+  } catch (error) {
+    console.error('Error sending report to WhatsApp:', error);
+    res.status(500).json({ error: 'Failed to send report' });
   }
 };

@@ -61,6 +61,11 @@ export const getReportCharts = async () => {
   return response.data;
 };
 
+export const sendReportToWhatsApp = async (phoneNumber: string) => {
+  const response = await api.post('/api/reports/send', { phoneNumber });
+  return response.data;
+};
+
 // Chatbot Settings API
 export const getChatbotSettings = async () => {
   const response = await api.get('/api/chatbot-settings');
