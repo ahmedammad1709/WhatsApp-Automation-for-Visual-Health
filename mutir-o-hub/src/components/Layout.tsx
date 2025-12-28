@@ -26,11 +26,6 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              </Button>
-              
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-sm font-medium text-primary-foreground">A</span>
               </div>

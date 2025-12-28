@@ -77,6 +77,17 @@ export const updateChatbotSettings = async (settings: { conversation_prompt: str
   return response.data;
 };
 
+// App Settings API
+export const getAppSettings = async () => {
+  const response = await api.get('/api/app-settings');
+  return response.data;
+};
+
+export const updateAppSettings = async (settings: { openai_key?: string; whatsapp_phone_id?: string; whatsapp_token?: string }) => {
+  const response = await api.post('/api/app-settings', settings);
+  return response.data;
+};
+
 // Events API
 export const getEvents = async (params?: any) => {
   const response = await api.get('/api/events', { params });

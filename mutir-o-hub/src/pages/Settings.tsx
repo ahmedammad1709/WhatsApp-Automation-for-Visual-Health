@@ -6,13 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { getChatbotSettings, updateChatbotSettings } from '../lib/api';
+import { getChatbotSettings, updateChatbotSettings, getAppSettings, updateAppSettings } from '../lib/api';
 
 // Purpose: Settings and configuration page
 // Manage API keys, WhatsApp settings, and AI preferences
 
 export default function Settings() {
   const [prompt, setPrompt] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [whatsappPhoneId, setWhatsappPhoneId] = useState('');
+  const [whatsappToken, setWhatsappToken] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -21,9 +24,19 @@ export default function Settings() {
 
   const fetchSettings = async () => {
     try {
-      const data = await getChatbotSettings();
-      if (data && data.conversation_prompt) {
-        setPrompt(data.conversation_prompt);
+      const [chatbotData, appSettings] = await Promise.all([
+        getChatbotSettings(),
+        getAppSettings()
+      ]);
+
+      if (chatbotData && chatbotData.conversation_prompt) {
+        setPrompt(chatbotData.conversation_prompt);
+      }
+
+      if (appSettings) {
+        setOpenaiKey(appSettings.OPENAI_API_KEY || '');
+        setWhatsappPhoneId(appSettings.WHATSAPP_PHONE_NUMBER_ID || '');
+        setWhatsappToken(appSettings.WHATSAPP_ACCESS_TOKEN || '');
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
@@ -39,7 +52,14 @@ export default function Settings() {
 
     setLoading(true);
     try {
-      await updateChatbotSettings({ conversation_prompt: prompt });
+      await Promise.all([
+        updateChatbotSettings({ conversation_prompt: prompt }),
+        updateAppSettings({
+          openai_key: openaiKey,
+          whatsapp_phone_id: whatsappPhoneId,
+          whatsapp_token: whatsappToken
+        })
+      ]);
       toast.success('Settings saved successfully');
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -100,7 +120,7 @@ export default function Settings() {
         </Card>
 
         {/* API Configuration */}
-        {/* <Card>
+        <Card>
           <CardHeader>
             <CardTitle>API Configuration</CardTitle>
             <CardDescription>
@@ -114,7 +134,8 @@ export default function Settings() {
                 id="openai-key"
                 type="password"
                 placeholder="sk-••••••••••••••••"
-                defaultValue="sk-abc123xyz"
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Used for AI-powered conversation analysis
@@ -122,29 +143,30 @@ export default function Settings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp-key">WhatsApp Business API Key</Label>
+              <Label htmlFor="whatsapp-phone-id">WhatsApp Phone Number ID</Label>
               <Input
-                id="whatsapp-key"
+                id="whatsapp-phone-id"
+                placeholder="123456789"
+                value={whatsappPhoneId}
+                onChange={(e) => setWhatsappPhoneId(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp-token">WhatsApp Access Token</Label>
+              <Input
+                id="whatsapp-token"
                 type="password"
                 placeholder="EAAxxxxxxxxxxxxxxx"
-                defaultValue="EAAabc123xyz"
+                value={whatsappToken}
+                onChange={(e) => setWhatsappToken(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Required for sending and receiving WhatsApp messages
               </p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="database-url">Database Connection URL</Label>
-              <Input
-                id="database-url"
-                type="password"
-                placeholder="postgresql://..."
-                defaultValue="postgresql://localhost:5432/mutirao"
-              />
-            </div>
           </CardContent>
-        </Card> */}
+        </Card>
 
 
         {/* Save Button */}

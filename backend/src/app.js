@@ -11,6 +11,7 @@ import conversationLogRoutes from './routes/conversationLogRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reportsRoutes from './routes/reportsRoutes.js';
 import chatbotSettingsRoutes from './routes/chatbotSettingsRoutes.js';
+import appSettingsRoutes from './routes/appSettingsRoutes.js';
 import { ok } from './utils/response.js';
 
 const app = express();
@@ -53,6 +54,9 @@ app.use('/reports', reportsRoutes);
 
 app.use('/api/chatbot-settings', chatbotSettingsRoutes);
 app.use('/chatbot-settings', chatbotSettingsRoutes);
+
+app.use('/api/app-settings', appSettingsRoutes);
+app.use('/app-settings', appSettingsRoutes);
 
 app.use('/', whatsappRoutes);
 

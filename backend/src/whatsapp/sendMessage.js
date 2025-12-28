@@ -1,9 +1,12 @@
 import https from 'https';
+import { getAppSetting } from '../utils/settingsHelper.js';
 
-function postMessage(path, body, phoneOverride) {
+async function postMessage(path, body, phoneOverride) {
+  const phoneId = phoneOverride || await getAppSetting('WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_PHONE_NUMBER_ID');
+  const accessToken = await getAppSetting('WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_ACCESS_TOKEN');
+
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
-    const phoneId = phoneOverride || process.env.WHATSAPP_PHONE_NUMBER_ID;
     const version = process.env.WHATSAPP_API_VERSION;
 
     if (!phoneId) {
@@ -25,7 +28,7 @@ function postMessage(path, body, phoneOverride) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`
+        'Authorization': `Bearer ${accessToken}`
       }
     };
 

@@ -1,30 +1,32 @@
 import OpenAI from "openai";
 import "dotenv/config";
 import pool from '../config/db.js';
+import { getAppSetting } from '../utils/settingsHelper.js';
 
 /* =========================
    OpenAI Client Init (v5)
-========================= */
+   ========================= */
 
-const apiKey = (process.env.OPENAI_API_KEY || "").trim();
-let client = null;
+async function getClient() {
+  const apiKey = (await getAppSetting('OPENAI_API_KEY', 'OPENAI_API_KEY') || "").trim();
 
-if (!apiKey) {
-  console.warn("[ChatGPT] WARNING: OPENAI_API_KEY is not set. Falling back.");
-} else {
+  if (!apiKey) {
+    console.warn("[ChatGPT] WARNING: OPENAI_API_KEY is not set.");
+    return null;
+  }
+
   try {
-    client = new OpenAI({ apiKey });
-    console.log("[ChatGPT] OpenAI client initialized");
-    console.log("[ChatGPT] API Key prefix:", apiKey.substring(0, 7));
+    const client = new OpenAI({ apiKey });
+    return client;
   } catch (err) {
     console.error("[ChatGPT] Failed to initialize OpenAI client:", err);
-    client = null;
+    return null;
   }
 }
 
 /* =========================
    State Extraction
-========================= */
+   ========================= */
 
 /**
  * Extracts current conversation state from history
@@ -32,6 +34,7 @@ if (!apiKey) {
  * @returns {Promise<object>} - Current state with collected fields
  */
 async function extractConversationState(conversationHistory) {
+  const client = await getClient();
   if (!client || conversationHistory.length === 0) {
     return {
       full_name: null,
@@ -327,6 +330,7 @@ IMPORTANTE SOBRE O JSON:
  * @returns {Promise<{reply: string, bookingData: object|null}>}
  */
 async function processConversation(userMessage, conversationHistory) {
+  const client = await getClient();
   if (!client) {
     // Fallback response if OpenAI is not available
     return {
