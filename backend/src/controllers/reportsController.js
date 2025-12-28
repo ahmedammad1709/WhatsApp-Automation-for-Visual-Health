@@ -19,7 +19,7 @@ const fetchStats = async () => {
   // 4. Average Conversion (Unique Patients / Unique WhatsApp Contacts)
   // This is a rough proxy for "Lead to Patient" conversion
   const [patientsResult] = await pool.query('SELECT COUNT(*) as count FROM patients');
-  const [contactsResult] = await pool.query('SELECT COUNT(DISTINCT patient_phone) as count FROM conversation_logs');
+  const [contactsResult] = await pool.query('SELECT COUNT(DISTINCT whatsapp_number) as count FROM conversation_logs');
   
   const patientsCount = patientsResult[0].count;
   const contactsCount = contactsResult[0].count;
