@@ -38,19 +38,25 @@ export const updateSettings = async (req, res) => {
   const { openai_key, whatsapp_phone_id, whatsapp_token } = req.body;
   
   try {
-    // Only update if a new value is provided (and it's not the masked version)
-    // Simple check: if it looks like a real key (length > 20)
+    // Only update if a new value is provided
+    // Allow empty strings to clear the setting (falling back to env)
     
-    if (openai_key && openai_key.length > 20 && !openai_key.includes('...')) {
-      await setAppSetting('OPENAI_API_KEY', openai_key);
+    if (openai_key !== undefined) {
+       // If it's the masked value, ignore it
+       if (!openai_key.includes('...')) {
+         await setAppSetting('OPENAI_API_KEY', openai_key);
+       }
     }
     
-    if (whatsapp_phone_id && whatsapp_phone_id.length > 5) {
+    if (whatsapp_phone_id !== undefined) {
       await setAppSetting('WHATSAPP_PHONE_NUMBER_ID', whatsapp_phone_id);
     }
     
-    if (whatsapp_token && whatsapp_token.length > 20 && !whatsapp_token.includes('...')) {
-      await setAppSetting('WHATSAPP_ACCESS_TOKEN', whatsapp_token);
+    if (whatsapp_token !== undefined) {
+       // If it's the masked value, ignore it
+       if (!whatsapp_token.includes('...')) {
+         await setAppSetting('WHATSAPP_ACCESS_TOKEN', whatsapp_token);
+       }
     }
     
     res.json({ message: 'Settings updated successfully' });
