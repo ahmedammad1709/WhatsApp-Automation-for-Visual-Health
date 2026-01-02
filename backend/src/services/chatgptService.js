@@ -517,8 +517,16 @@ function extractBookingData(content) {
  * @returns {string} - Clean reply without JSON
  */
 function cleanReplyFromJson(content) {
-  // Remove JSON object if present
-  return content.replace(/\{[\s\S]*"full_name"[\s\S]*\}/, '').trim();
+  // Remove JSON object if present (pattern 1: explicit JSON structure with full_name)
+  let cleaned = content.replace(/\{[\s\S]*"full_name"[\s\S]*\}/, '');
+  
+  // Remove markdown code blocks if any remain
+  cleaned = cleaned.replace(/```json/gi, '').replace(/```/g, '');
+  
+  // Remove standalone "json" word that might be left over on a separate line
+  cleaned = cleaned.replace(/^\s*json\s*$/gim, '');
+
+  return cleaned.trim();
 }
 
 /* =========================
