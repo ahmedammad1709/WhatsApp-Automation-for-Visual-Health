@@ -327,25 +327,40 @@ IMPORTANTE SOBRE O JSON:
  * Processes a user message with full conversation history
  * @param {string} userMessage - The current user message
  * @param {Array<{direction: 'in'|'out', message: string}>} conversationHistory - Full conversation history
- * @returns {Promise<{reply: string, bookingData: object|null}>}
+ * @param {object} savedState - The previously saved session state from DB
+ * @returns {Promise<{reply: string, bookingData: object|null, updatedState: object}>}
  */
-async function processConversation(userMessage, conversationHistory) {
+async function processConversation(userMessage, conversationHistory, savedState = {}) {
   const client = await getClient();
   if (!client) {
     // Fallback response if OpenAI is not available
     return {
       reply: "Desculpe, estou temporariamente indisponível. Por favor, tente novamente mais tarde.",
-      bookingData: null
+      bookingData: null,
+      updatedState: savedState
     };
   }
 
   try {
-    // STEP 1: Extract current conversation state
-    console.log('[ChatGPT] Extracting conversation state...');
-    const currentState = await extractConversationState(conversationHistory);
+    // STEP 1: Extract current conversation state from RECENT history
+    console.log('[ChatGPT] Extracting conversation state from history...');
+    const extractedState = await extractConversationState(conversationHistory);
+    
+    // STEP 1.5: Merge with saved state (Saved state is the base, extracted overrides if present)
+    // This ensures we don't lose info that scrolled out of the context window
+    const currentState = { ...savedState };
+    
+    // Only overwrite if extractedState has a non-null value
+    if (extractedState.full_name) currentState.full_name = extractedState.full_name;
+    if (extractedState.reason_for_visit) currentState.reason_for_visit = extractedState.reason_for_visit;
+    if (extractedState.city) currentState.city = extractedState.city;
+    if (extractedState.neighborhood) currentState.neighborhood = extractedState.neighborhood;
+    if (extractedState.selected_event_or_clinic) currentState.selected_event_or_clinic = extractedState.selected_event_or_clinic;
+    if (extractedState.preferred_date) currentState.preferred_date = extractedState.preferred_date;
+
     const stateSummary = formatStateSummary(currentState);
-    console.log('[ChatGPT] Current state:', currentState);
-    console.log('[ChatGPT] State summary:', stateSummary);
+    console.log('[ChatGPT] Merged state (Saved + Extracted):', currentState);
+    console.log('[ChatGPT] State summary for Prompt:', stateSummary);
 
     // STEP 2: Build system prompt with state summary injected
     const systemPrompt = await buildSystemPrompt(stateSummary);
@@ -355,8 +370,8 @@ async function processConversation(userMessage, conversationHistory) {
       { role: "system", content: systemPrompt }
     ];
 
-    // Add conversation history (last 30 messages to avoid token limits)
-    const recentHistory = conversationHistory.slice(-30);
+    // Add conversation history (last 40 messages - increased from 30)
+    const recentHistory = conversationHistory.slice(-40);
     for (const entry of recentHistory) {
       if (entry.direction === 'in') {
         messages.push({ role: "user", content: entry.message });
@@ -373,7 +388,7 @@ async function processConversation(userMessage, conversationHistory) {
     // STEP 4: Call OpenAI API
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.7, // Higher temperature for more natural, varied responses
+      temperature: 0.7, 
       messages: messages,
     });
 
@@ -392,24 +407,12 @@ async function processConversation(userMessage, conversationHistory) {
     // Merge with current state if booking data is incomplete
     if (bookingData) {
       // Fill in any missing fields from current state
-      if (!bookingData.full_name && currentState.full_name) {
-        bookingData.full_name = currentState.full_name;
-      }
-      if (!bookingData.reason_for_visit && currentState.reason_for_visit) {
-        bookingData.reason_for_visit = currentState.reason_for_visit;
-      }
-      if (!bookingData.city && currentState.city) {
-        bookingData.city = currentState.city;
-      }
-      if (!bookingData.neighborhood && currentState.neighborhood) {
-        bookingData.neighborhood = currentState.neighborhood;
-      }
-      if (!bookingData.event && currentState.selected_event_or_clinic) {
-        bookingData.event = currentState.selected_event_or_clinic;
-      }
-      if (!bookingData.date && currentState.preferred_date) {
-        bookingData.date = currentState.preferred_date;
-      }
+      if (!bookingData.full_name && currentState.full_name) bookingData.full_name = currentState.full_name;
+      if (!bookingData.reason_for_visit && currentState.reason_for_visit) bookingData.reason_for_visit = currentState.reason_for_visit;
+      if (!bookingData.city && currentState.city) bookingData.city = currentState.city;
+      if (!bookingData.neighborhood && currentState.neighborhood) bookingData.neighborhood = currentState.neighborhood;
+      if (!bookingData.event && currentState.selected_event_or_clinic) bookingData.event = currentState.selected_event_or_clinic;
+      if (!bookingData.date && currentState.preferred_date) bookingData.date = currentState.preferred_date;
     }
     
     // Remove JSON from the reply if present
@@ -417,14 +420,16 @@ async function processConversation(userMessage, conversationHistory) {
 
     return {
       reply: reply.trim(),
-      bookingData: bookingData
+      bookingData: bookingData,
+      updatedState: currentState // Return the merged state so it can be saved
     };
 
   } catch (error) {
     console.error("[ChatGPT] Conversation processing failed:", error);
     return {
       reply: "Desculpe, ocorreu um erro ao processar sua mensagem. Poderia repetir, por favor?",
-      bookingData: null
+      bookingData: null,
+      updatedState: savedState
     };
   }
 }

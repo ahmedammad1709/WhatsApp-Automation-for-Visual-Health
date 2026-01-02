@@ -8,7 +8,13 @@ const CURRENT_SESSION_VERSION = 4; // Increment version to reset all sessions
 // --- Helper for Conversation History ---
 async function getConversationHistory(phone, limit = 50) {
     const [rows] = await pool.query(
-        'SELECT direction, message FROM conversation_logs WHERE whatsapp_number = ? ORDER BY created_at ASC LIMIT ?',
+        `SELECT direction, message FROM (
+            SELECT direction, message, created_at 
+            FROM conversation_logs 
+            WHERE whatsapp_number = ? 
+            ORDER BY created_at DESC 
+            LIMIT ?
+        ) sub ORDER BY created_at ASC`,
         [phone, limit]
     );
     return rows;
@@ -191,7 +197,44 @@ async function handleIncomingMessage(phone, text) {
 
     // 5. Process with ChatGPT
     console.log(`[CONVERSATION] Processing message for ${phone} with ChatGPT`);
-    const { reply, bookingData } = await processConversation(cleanText, history);
+    const { reply, bookingData, updatedState } = await processConversation(cleanText, history, session.metadata);
+
+    // 5.5 Persist State (CRITICAL FIX FOR LOOPING)
+    if (updatedState) {
+      try {
+        // Always update metadata - this is the source of truth for the bot
+        await pool.query(
+          'UPDATE whatsapp_sessions SET metadata = ? WHERE whatsapp_number = ?',
+          [JSON.stringify(updatedState), phone]
+        );
+        
+        // Also try to update specific columns for reporting/visibility
+        // We wrap this in a separate try/catch so it doesn't break the flow if columns differ
+        try {
+           const updates = [];
+           const params = [];
+           
+           if (updatedState.full_name) { updates.push('full_name = ?'); params.push(updatedState.full_name); }
+           if (updatedState.city) { updates.push('city = ?'); params.push(updatedState.city); }
+           if (updatedState.neighborhood) { updates.push('neighborhood = ?'); params.push(updatedState.neighborhood); }
+           if (updatedState.reason_for_visit) { updates.push('reason = ?'); params.push(updatedState.reason_for_visit); }
+           
+           if (updates.length > 0) {
+               params.push(phone);
+               await pool.query(
+                   `UPDATE whatsapp_sessions SET ${updates.join(', ')} WHERE whatsapp_number = ?`,
+                   params
+               );
+           }
+        } catch (colError) {
+          // It's okay if these columns don't exist, we rely on metadata
+          console.warn('[SESSION] Note: Could not update specific columns (likely schema mismatch), but metadata was saved.', colError.message);
+        }
+        
+      } catch (dbError) {
+        console.error('[SESSION] Failed to persist session state:', dbError);
+      }
+    }
 
     // 6. If booking data is complete, process the booking
     if (bookingData) {
