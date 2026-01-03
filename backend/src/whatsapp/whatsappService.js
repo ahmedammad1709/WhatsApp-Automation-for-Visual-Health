@@ -259,7 +259,10 @@ async function handleIncomingMessage(phone, text) {
         await markSessionComplete(phone);
 
         // Format confirmation message (DATE-ONLY)
-        const apptDate = new Date(result.appointment_date).toLocaleDateString('pt-BR');
+        // Fix: Manual formatting to avoid timezone issues with new Date()
+        const [year, month, day] = result.appointment_date.split('-');
+        const apptDate = `${day}/${month}/${year}`;
+        
         const confirmMsg = `${reply}\n\n✅ Sua consulta está confirmada para o dia ${apptDate}, em ${result.location}, ${result.city_name}.`;
 
         return {
