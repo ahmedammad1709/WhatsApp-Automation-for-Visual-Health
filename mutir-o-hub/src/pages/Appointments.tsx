@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Download, Filter, CheckCircle, Eye } from 'lucide-react';
 import { getAppointments, updateAppointmentStatus, getCities } from '@/lib/api';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import {
   Select,
   SelectContent,
@@ -73,8 +74,45 @@ export default function Appointments() {
   };
 
   const handleExport = () => {
-    toast.success('Exporting appointments to Excel...');
-    // In real app, would trigger download
+    if (filteredAppointments.length === 0) {
+      toast.error('No appointments to export');
+      return;
+    }
+
+    toast.info('Preparing export...');
+
+    try {
+      const exportData = filteredAppointments.map(apt => {
+        // Safe date formatting (YYYY-MM-DD -> DD/MM/YYYY)
+        let dateStr = '';
+        if (apt.appointment_date) {
+           const rawDate = typeof apt.appointment_date === 'string' ? apt.appointment_date : new Date(apt.appointment_date).toISOString();
+           const [year, month, day] = rawDate.split('T')[0].split('-');
+           dateStr = `${day}/${month}/${year}`;
+        }
+
+        return {
+          'Patient Name': apt.patient_name,
+          'Phone': apt.whatsapp_number,
+          'City': apt.city_name,
+          'Neighborhood': apt.neighborhood || '',
+          'Event Location': apt.location,
+          'Date': dateStr,
+          'Status': apt.status,
+          'Created At': apt.created_at ? new Date(apt.created_at).toLocaleString('pt-BR') : ''
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Appointments");
+      
+      XLSX.writeFile(wb, `appointments_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Appointments exported successfully!');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export appointments');
+    }
   };
 
   const filteredAppointments = appointments.filter(apt => {
@@ -91,7 +129,12 @@ export default function Appointments() {
     {
       key: 'appointment_date',
       label: 'Date',
-      render: (date: string) => date ? new Date(date).toLocaleDateString('pt-BR') : '-',
+      render: (date: string) => {
+        if (!date) return '-';
+        const rawDate = typeof date === 'string' ? date : new Date(date).toISOString();
+        const [year, month, day] = rawDate.split('T')[0].split('-');
+        return `${day}/${month}/${year}`;
+      },
     },
     {
       key: 'status',
@@ -221,15 +264,15 @@ export default function Appointments() {
                   <p>{selectedAppointment.location}</p>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Date</h3>
-                    <p>{selectedAppointment.slot_date ? new Date(selectedAppointment.slot_date).toLocaleDateString('pt-BR') : '-'}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Time</h3>
-                    <p>{selectedAppointment.slot_time || '-'}</p>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Date</h3>
+                  <p>
+                    {selectedAppointment.appointment_date ? (() => {
+                      const rawDate = typeof selectedAppointment.appointment_date === 'string' ? selectedAppointment.appointment_date : new Date(selectedAppointment.appointment_date).toISOString();
+                      const [year, month, day] = rawDate.split('T')[0].split('-');
+                      return `${day}/${month}/${year}`;
+                    })() : '-'}
+                  </p>
                 </div>
                 
                 <div>
