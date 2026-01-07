@@ -141,6 +141,11 @@ export const updateAppointmentStatus = async (id: string | number, status: strin
   return response.data;
 };
 
+export const getReminders = async () => {
+  const response = await api.get('/api/appointments/reminders');
+  return response.data?.data ?? [];
+};
+
 // Conversation Logs API
 export const getConversationLogs = async () => {
   const response = await api.get('/api/conversation-logs');

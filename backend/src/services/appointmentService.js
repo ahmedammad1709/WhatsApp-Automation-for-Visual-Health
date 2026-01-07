@@ -53,4 +53,21 @@ async function updateAppointmentStatus(id, status) {
   return result.affectedRows > 0;
 }
 
-export { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus };
+async function getSentReminders() {
+  const [rows] = await pool.query(
+    `SELECT a.id, a.patient_id, a.event_id, a.appointment_date, a.status, 
+            a.reminder_24h_sent, a.reminder_24h_sent_at,
+            p.full_name AS patient_name, p.whatsapp_number,
+            e.location,
+            c.name AS city_name
+     FROM appointments a
+     LEFT JOIN patients p ON p.id = a.patient_id
+     LEFT JOIN events e ON e.id = a.event_id
+     LEFT JOIN cities c ON c.id = e.city_id
+     WHERE a.reminder_24h_sent = 1
+     ORDER BY a.reminder_24h_sent_at DESC`
+  );
+  return rows;
+}
+
+export { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus, getSentReminders };

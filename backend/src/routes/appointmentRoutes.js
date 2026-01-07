@@ -11,6 +11,7 @@ const router = express.Router();
  * DELETE /appointments/:id - Delete appointment
  */
 
+router.get('/reminders', AppointmentController.getReminders);
 router.get('/', AppointmentController.getAll);
 router.post('/', AppointmentController.create);
 router.get('/event/:event_id', AppointmentController.listByEvent);

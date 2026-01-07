@@ -61,4 +61,13 @@ async function updateStatus(req, res) {
   }
 }
 
-export { create, listByEvent, remove, getAll, updateStatus };
+async function getReminders(req, res) {
+  try {
+    const data = await AppointmentService.getSentReminders();
+    res.json(ok(data));
+  } catch (e) {
+    res.status(500).json(error('Failed to fetch reminders'));
+  }
+}
+
+export { create, listByEvent, remove, getAll, updateStatus, getReminders };
