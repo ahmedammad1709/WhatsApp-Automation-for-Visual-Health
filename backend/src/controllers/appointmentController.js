@@ -1,5 +1,7 @@
 import { ok, error } from '../utils/response.js';
 import * as AppointmentService from '../services/appointmentService.js';
+import * as WhatsAppService from '../whatsapp/whatsappService.js';
+import { getAppSetting } from '../utils/settingsHelper.js';
 
 async function create(req, res) {
   const { patient_id, event_id, appointment_date, status } = req.body || {};
@@ -71,3 +73,21 @@ async function getReminders(req, res) {
 }
 
 export { create, listByEvent, remove, getAll, updateStatus, getReminders };
+
+async function sendCustomReminder(req, res) {
+  try {
+    const { phone, message } = req.body || {};
+    if (!phone || !message) {
+      return res.status(400).json(error('phone and message are required'));
+    }
+    const phoneId = await getAppSetting('WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_PHONE_NUMBER_ID');
+    await WhatsAppService.sendText(phone, message, phoneId);
+    await WhatsAppService.logMessage(phone, 'out', message);
+    await AppointmentService.markReminderForLatestAppointmentByPhone(phone);
+    return res.json(ok({ sent: true }, 'Reminder sent'));
+  } catch (e) {
+    return res.status(500).json(error('Failed to send reminder'));
+  }
+}
+
+export { sendCustomReminder };
