@@ -44,11 +44,63 @@ function addDays(date, days) {
 }
 
 function formatDateBR(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('pt-BR');
+  // Manual formatting to avoid timezone issues
+  // dateStr is likely a Date object or a string "YYYY-MM-DD"
+  let dateObj = dateStr;
+  if (typeof dateStr === 'string') {
+    dateObj = new Date(dateStr);
+  }
+  
+  if (dateObj instanceof Date && !isNaN(dateObj)) {
+     const year = dateObj.getFullYear();
+     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+     const day = String(dateObj.getDate()).padStart(2, '0');
+     // If dateStr was YYYY-MM-DD string, the Date constructor might treat it as UTC
+     // which leads to previous day in local time.
+     // Safer to just parse the string if it's available.
+  }
+
+  // Best approach: if it comes from MySQL date column, it might be a Date object in local time or UTC.
+  // Let's assume input is either YYYY-MM-DD string or Date object.
+  // If it's a Date object from mysql2 driver for a DATE column, it usually represents local midnight.
+  
+  // To be absolutely safe with "YYYY-MM-DD" from DB:
+  if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [y, m, d] = dateStr.split('-');
+      return `${d}/${m}/${y}`;
+  }
+  
+  // If it's a Date object
+  if (dateObj instanceof Date) {
+      // Use toISOString and split if we want to ignore timezone (assuming UTC date in DB)
+      // But mysql2 often converts to local time.
+      // Let's rely on string formatting if possible.
+      try {
+          return dateObj.toLocaleDateString('pt-BR');
+      } catch (e) {
+          return dateStr;
+      }
+  }
+  
+  return String(dateStr);
+}
+
+// Improved version that handles both string and Date object from MySQL
+function safeDateBR(val) {
+    if (!val) return '';
+    if (val instanceof Date) {
+        // Fix for the timezone issue: treat UTC date as local date components
+        return val.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    }
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}/)) {
+        const [y, m, d] = val.split('T')[0].split('-');
+        return `${d}/${m}/${y}`;
+    }
+    return String(val);
 }
 
 async function fetchAppointmentsForDate(targetDateStr) {
+  // targetDateStr is YYYY-MM-DD
   const [rows] = await pool.query(
     `SELECT 
         a.id,
@@ -69,14 +121,19 @@ async function fetchAppointmentsForDate(targetDateStr) {
        AND (a.reminder_24h_sent IS NULL OR a.reminder_24h_sent = 0)`,
     [targetDateStr]
   );
-  return rows;
+  
+  // Format dates in the rows to be safe strings
+  return rows.map(row => ({
+      ...row,
+      formatted_date: safeDateBR(row.appointment_date)
+  }));
 }
 
 async function getLastInboundTimestamp(phone) {
   const [rows] = await pool.query(
     `SELECT created_at 
        FROM conversation_logs 
-      WHERE whatsapp_number = ? AND direction = 'in'
+      WHERE patient_phone = ? AND message_in IS NOT NULL
       ORDER BY created_at DESC
       LIMIT 1`,
     [phone]
@@ -85,7 +142,7 @@ async function getLastInboundTimestamp(phone) {
 }
 
 function buildReminderMessage(appt) {
-  const date = formatDateBR(appt.appointment_date);
+  const date = appt.formatted_date || safeDateBR(appt.appointment_date);
   return `Olá, ${appt.full_name}! Aqui é o Instituto Luz no Caminho. Lembrete da sua consulta amanhã, ${date}, em ${appt.location}, ${appt.city_name}. Se precisar reagendar, responda por aqui.`;
 }
 
@@ -136,7 +193,12 @@ async function runOnce({ simulateToday } = {}) {
 
   const today = getToday(simulateToday || process.env.REMINDER_SIMULATED_TODAY);
   const targetDate = addDays(today, 1);
-  const targetDateStr = targetDate.toISOString().split('T')[0];
+  
+  // Fix: Use local date components to avoid timezone shift when converting to string
+  const y = targetDate.getFullYear();
+  const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const d = String(targetDate.getDate()).padStart(2, '0');
+  const targetDateStr = `${y}-${m}-${d}`;
 
   console.log(`[REMINDER 24H] Running job for target date ${targetDateStr}${simulateToday ? ` (simulated today: ${simulateToday})` : ''}`);
 
