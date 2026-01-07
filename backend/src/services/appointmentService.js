@@ -70,23 +70,4 @@ async function getSentReminders() {
   return rows;
 }
 
-async function markReminderForLatestAppointmentByPhone(phone) {
-  const [rows] = await pool.query(
-    `SELECT a.id 
-       FROM appointments a
-       JOIN patients p ON p.id = a.patient_id
-      WHERE p.whatsapp_number = ?
-      ORDER BY a.appointment_date DESC, a.created_at DESC
-      LIMIT 1`,
-    [phone]
-  );
-  if (!rows.length) return false;
-  const apptId = rows[0].id;
-  await pool.query(
-    'UPDATE appointments SET reminder_24h_sent = 1, reminder_24h_sent_at = NOW() WHERE id = ?',
-    [apptId]
-  );
-  return true;
-}
-
-export { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus, getSentReminders, markReminderForLatestAppointmentByPhone };
+export { createAppointment, listAppointmentsByEvent, deleteAppointment, getAllAppointments, updateAppointmentStatus, getSentReminders };

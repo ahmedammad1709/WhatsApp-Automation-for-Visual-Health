@@ -146,11 +146,6 @@ export const getReminders = async () => {
   return response.data?.data ?? [];
 };
 
-export const sendCustomReminder = async (phone: string, message: string) => {
-  const response = await api.post('/api/appointments/reminders/send', { phone, message });
-  return response.data;
-};
-
 // Conversation Logs API
 export const getConversationLogs = async () => {
   const response = await api.get('/api/conversation-logs');

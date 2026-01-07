@@ -17,6 +17,5 @@ router.post('/', AppointmentController.create);
 router.get('/event/:event_id', AppointmentController.listByEvent);
 router.patch('/:id/status', AppointmentController.updateStatus);
 router.delete('/:id', AppointmentController.remove);
-router.post('/reminders/send', AppointmentController.sendCustomReminder);
 
 export default router;

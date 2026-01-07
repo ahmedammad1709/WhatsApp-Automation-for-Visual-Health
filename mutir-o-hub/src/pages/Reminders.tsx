@@ -2,15 +2,13 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import DataTable from '@/components/DataTable';
 import { Badge } from '@/components/ui/badge';
-import { getReminders, sendCustomReminder } from '@/lib/api';
+import { getReminders } from '@/lib/api';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
 
 export default function Reminders() {
   const [reminders, setReminders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [phone, setPhone] = useState('');
-  const [message, setMessage] = useState('Olá! Lembrete da sua consulta amanhã. Se precisar reagendar, responda por aqui.');
 
   useEffect(() => {
     loadReminders();
@@ -81,43 +79,6 @@ export default function Reminders() {
               Showing {reminders.length} sent reminders
             </p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 items-end">
-          <div className="col-span-1">
-            <input
-              className="w-full border border-border rounded-md px-3 py-2 bg-background"
-              placeholder="Phone (e.g., 923141038814)"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </div>
-          <div className="col-span-2">
-            <textarea
-              className="w-full border border-border rounded-md px-3 py-2 bg-background h-24"
-              placeholder="Reminder message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-          </div>
-          <button
-            className="px-4 py-2 rounded-md bg-primary text-primary-foreground"
-            onClick={async () => {
-              if (!phone.trim() || !message.trim()) {
-                toast.error('Phone and message are required');
-                return;
-              }
-              try {
-                await sendCustomReminder(phone.trim(), message.trim());
-                toast.success('Reminder sent');
-                await loadReminders();
-              } catch (e) {
-                toast.error('Failed to send reminder');
-              }
-            }}
-          >
-            Send Reminder
-          </button>
         </div>
 
         {loading ? (
