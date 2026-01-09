@@ -85,7 +85,7 @@ async function fixSchema() {
 
     // 4. Ensure appointments table exists (DATE-ONLY, NO TIME SLOTS)
     console.log('Checking appointments table...');
-    const [appointmentsTable] = await connection.query("SHOW TABLES LIKE 'appointments'");
+    const [appointmentsTableExists] = await connection.query("SHOW TABLES LIKE 'appointments'");
     if (appointmentsTable.length === 0) {
         console.log('appointments table missing. Creating...');
         await connection.query(`

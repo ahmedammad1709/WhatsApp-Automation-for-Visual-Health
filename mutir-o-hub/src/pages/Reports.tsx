@@ -51,8 +51,8 @@ export default function Reports() {
   const handleSendToWhatsApp = async () => {
     try {
       setLoading(true);
-      await sendReportToWhatsApp('558892808617');
-      toast.success('Report sent to WhatsApp manager (558892808617)');
+      await sendReportToWhatsApp('5588981033336');
+      toast.success('Report sent to WhatsApp manager (5588981033336)');
     } catch (error) {
       console.error('Failed to send report:', error);
       toast.error('Failed to send report to WhatsApp');
