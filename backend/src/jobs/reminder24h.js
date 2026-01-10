@@ -133,7 +133,7 @@ async function getLastInboundTimestamp(phone) {
   const [rows] = await pool.query(
     `SELECT created_at 
        FROM conversation_logs 
-      WHERE patient_phone = ? AND message_in IS NOT NULL
+      WHERE whatsapp_number = ? AND direction = 'in'
       ORDER BY created_at DESC
       LIMIT 1`,
     [phone]

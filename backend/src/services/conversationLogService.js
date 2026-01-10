@@ -7,7 +7,7 @@ async function getAllConversationLogs() {
   
   return rows.map(row => ({
     id: row.id,
-    patient_phone: row.whatsapp_number,
+    whatsapp_number: row.whatsapp_number,
     message_in: row.direction === 'in' ? row.message : null,
     message_out: row.direction === 'out' ? row.message : null,
     created_at: row.created_at
@@ -22,7 +22,7 @@ async function getConversationLogsByPhone(phone) {
   
   return rows.map(row => ({
     id: row.id,
-    patient_phone: row.whatsapp_number,
+    whatsapp_number: row.whatsapp_number,
     message_in: row.direction === 'in' ? row.message : null,
     message_out: row.direction === 'out' ? row.message : null,
     created_at: row.created_at
