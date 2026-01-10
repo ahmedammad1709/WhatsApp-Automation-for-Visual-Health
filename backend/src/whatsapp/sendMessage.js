@@ -60,9 +60,12 @@ async function postMessage(path, body, phoneOverride) {
 }
 
 async function sendText(phone, text, phoneOverride) {
+  // Sanitize phone number to remove non-digits
+  const cleanPhone = String(phone).replace(/\D/g, '');
+  
   const body = {
     messaging_product: 'whatsapp',
-    to: phone,
+    to: cleanPhone,
     type: 'text',
     text: { body: text }
   };
