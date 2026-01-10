@@ -20,7 +20,7 @@ const menuItems = [
   { name: 'Cidades', path: '/cities', icon: Activity },
   { name: 'Eventos', path: '/events', icon: Calendar },
   { name: 'Agendamentos', path: '/appointments', icon: Users },
-  { name: 'Lembretes', path: '/reminders', icon: Bell },
+  // { name: 'Lembretes', path: '/reminders', icon: Bell },
   { name: 'Pacientes', path: '/patients', icon: Users },
   { name: 'Logs de Conversa', path: '/conversation-logs', icon: MessageSquare },
   { name: 'Relatórios', path: '/reports', icon: BarChart3 },
