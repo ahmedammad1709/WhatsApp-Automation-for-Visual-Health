@@ -91,6 +91,7 @@ async function sendOptions(phone, headerText, bodyText, options, phoneOverride) 
 
 // Sends a pre-approved template message (business-initiated, outside 24h window)
 async function sendTemplate(phone, templateName, bodyParams = [], languageCode = 'pt_BR', phoneOverride) {
+  const cleanPhone = String(phone).replace(/\D/g, '');
   if (!templateName) {
     console.error('[GRAPH API] Missing template name for sendTemplate');
     return { error: 'missing_template_name' };
@@ -98,7 +99,7 @@ async function sendTemplate(phone, templateName, bodyParams = [], languageCode =
 
   const body = {
     messaging_product: 'whatsapp',
-    to: phone,
+    to: cleanPhone,
     type: 'template',
     template: {
       name: templateName,
