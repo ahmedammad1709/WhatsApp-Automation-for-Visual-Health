@@ -16,15 +16,15 @@ import { cn } from '@/lib/utils';
 // Shows all available pages and highlights the current page
 
 const menuItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Cities', path: '/cities', icon: Activity },
-  { name: 'Events', path: '/events', icon: Calendar },
-  { name: 'Appointments', path: '/appointments', icon: Users },
-  { name: 'Reminders', path: '/reminders', icon: Bell },
-  { name: 'Patients', path: '/patients', icon: Users },
-  { name: 'Conversation Logs', path: '/conversation-logs', icon: MessageSquare },
-  { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'Settings', path: '/settings', icon: Settings },
+  { name: 'Painel', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Cidades', path: '/cities', icon: Activity },
+  { name: 'Eventos', path: '/events', icon: Calendar },
+  { name: 'Agendamentos', path: '/appointments', icon: Users },
+  { name: 'Lembretes', path: '/reminders', icon: Bell },
+  { name: 'Pacientes', path: '/patients', icon: Users },
+  { name: 'Logs de Conversa', path: '/conversation-logs', icon: MessageSquare },
+  { name: 'Relatórios', path: '/reports', icon: BarChart3 },
+  { name: 'Configurações', path: '/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -40,7 +40,7 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-foreground">Mutirão</h1>
-            <p className="text-xs text-muted-foreground">Admin Dashboard</p>
+            <p className="text-xs text-muted-foreground">Painel Administrativo</p>
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function Sidebar() {
       {/* Footer Info */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
         <div className="text-xs text-muted-foreground">
-          <p className="font-medium mb-1">Admin User</p>
+          <p className="font-medium mb-1">Administrador</p>
           <p>admin@mutirao.com</p>
         </div>
       </div>

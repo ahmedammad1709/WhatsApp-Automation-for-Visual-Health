@@ -21,7 +21,7 @@ export default function Reminders() {
       setReminders(data);
     } catch (error) {
       console.error('Error loading reminders:', error);
-      toast.error('Failed to load reminders');
+      toast.error('Falha ao carregar lembretes');
     } finally {
       setLoading(false);
     }
@@ -42,12 +42,12 @@ export default function Reminders() {
     },
     { 
       key: 'reminder_24h_sent_at', 
-      label: 'Sent At',
+      label: 'Enviado em',
       render: (date: string) => date ? new Date(date).toLocaleString('pt-BR') : '-'
     },
     {
       key: 'preview',
-      label: 'Message Preview',
+      label: 'Prévia da Mensagem',
       render: (_: any, row: any) => {
         const apptDate = row.appointment_date 
           ? (() => {
@@ -74,20 +74,20 @@ export default function Reminders() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Reminders Sent</h1>
+            <h1 className="text-3xl font-bold text-foreground">Lembretes Enviados</h1>
             <p className="text-muted-foreground mt-1">
-              Showing {reminders.length} sent reminders
+              Exibindo {reminders.length} lembretes enviados
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading reminders...</div>
+          <div className="text-center py-8 text-muted-foreground">Carregando lembretes...</div>
         ) : (
           <DataTable
             columns={columns}
             data={reminders}
-            emptyMessage="No reminders sent yet"
+            emptyMessage="Nenhum lembrete enviado ainda"
           />
         )}
       </div>

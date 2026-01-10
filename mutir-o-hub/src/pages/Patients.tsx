@@ -30,26 +30,26 @@ export default function Patients() {
       setPatients(data);
     } catch (error) {
       console.error('Error loading patients:', error);
-      toast.error('Failed to load patients');
+      toast.error('Falha ao carregar pacientes');
     } finally {
       setLoading(false);
     }
   };
 
   const columns = [
-    { key: 'full_name', label: 'Full Name' },
-    { key: 'whatsapp_number', label: 'WhatsApp Number' },
-    { key: 'city', label: 'City' },
-    { key: 'neighborhood', label: 'Neighborhood' },
-    { key: 'reason', label: 'Reason' },
+    { key: 'full_name', label: 'Nome Completo' },
+    { key: 'whatsapp_number', label: 'Número do WhatsApp' },
+    { key: 'city', label: 'Cidade' },
+    { key: 'neighborhood', label: 'Bairro' },
+    { key: 'reason', label: 'Motivo' },
     {
       key: 'created_at',
-      label: 'Created At',
+      label: 'Criado em',
       render: (date: string) => date ? new Date(date).toLocaleDateString('pt-BR') : '-',
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Ações',
       render: (_: any, row: any) => (
         <div className="flex gap-2">
           <Button
@@ -83,9 +83,9 @@ export default function Patients() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Patients</h1>
+            <h1 className="text-3xl font-bold text-foreground">Pacientes</h1>
             <p className="text-muted-foreground mt-1">
-              Showing {filteredPatients.length} patients
+              Mostrando {filteredPatients.length} pacientes
             </p>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function Patients() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search patients..."
+            placeholder="Buscar pacientes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -103,12 +103,12 @@ export default function Patients() {
 
         {/* Patients Table */}
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading patients...</div>
+          <div className="text-center py-8 text-muted-foreground">Carregando pacientes...</div>
         ) : (
           <DataTable
             columns={columns}
             data={filteredPatients}
-            emptyMessage="No patients found"
+            emptyMessage="Nenhum paciente encontrado"
           />
         )}
 
@@ -116,38 +116,38 @@ export default function Patients() {
         <Sheet open={!!selectedPatient} onOpenChange={() => setSelectedPatient(null)}>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Patient Details</SheetTitle>
+              <SheetTitle>Detalhes do Paciente</SheetTitle>
             </SheetHeader>
             {selectedPatient && (
               <div className="mt-6 space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Full Name</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Nome Completo</h3>
                   <p className="text-lg font-semibold">{selectedPatient.full_name}</p>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">WhatsApp Number</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Número do WhatsApp</h3>
                   <p>{selectedPatient.whatsapp_number}</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">City</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Cidade</h3>
                     <p>{selectedPatient.city || '-'}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Neighborhood</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Bairro</h3>
                     <p>{selectedPatient.neighborhood || '-'}</p>
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Reason</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Motivo</h3>
                   <p>{selectedPatient.reason || '-'}</p>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Created At</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Criado em</h3>
                   <p className="text-sm">{selectedPatient.created_at ? new Date(selectedPatient.created_at).toLocaleString('pt-BR') : '-'}</p>
                 </div>
               </div>

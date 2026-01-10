@@ -47,7 +47,7 @@ export default function Dashboard() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-full">
-          <p>Loading dashboard data...</p>
+          <p>Carregando dados do painel...</p>
         </div>
       </Layout>
     );
@@ -58,37 +58,37 @@ export default function Dashboard() {
       <div className="space-y-6">
         {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">Painel</h1>
           <p className="text-muted-foreground mt-1">
-            Overview of your mutirão events and appointments
+            Visão geral dos eventos e agendamentos do mutirão
           </p>
         </div>
 
         {/* Stats Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Total Appointments Today"
+            title="Agendamentos Hoje"
             value={stats.todayAppointments}
             // change={11.9}
             // trend="up"
             icon={<Users className="w-5 h-5" />}
           />
           <StatsCard
-            title="Confirmed Appointments"
+            title="Agendamentos Confirmados"
             value={stats.confirmedAppointments}
             // change={8.6}
             // trend="up"
             icon={<CheckCircle className="w-5 h-5" />}
           />
           <StatsCard
-            title="Pending Capacity"
+            title="Capacidade Pendente"
             value={stats.pendingCapacity}
             // change={-3.8}
             // trend="down"
             icon={<Clock className="w-5 h-5" />}
           />
           <StatsCard
-            title="Conversion Rate"
+            title="Taxa de Conversão"
             value={`${stats.conversionRate}%`}
             // change={3.9}
             // trend="up"
@@ -101,7 +101,7 @@ export default function Dashboard() {
           {/* Appointments by City */}
           <Card>
             <CardHeader>
-              <CardTitle>Appointments by City</CardTitle>
+              <CardTitle>Agendamentos por Cidade</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -125,7 +125,7 @@ export default function Dashboard() {
           {/* Appointments by Date */}
           <Card>
             <CardHeader>
-              <CardTitle>Appointments Trend (Last 7 Days)</CardTitle>
+              <CardTitle>Tendência de Agendamentos (Últimos 7 Dias)</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>

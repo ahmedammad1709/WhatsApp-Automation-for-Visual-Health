@@ -38,10 +38,10 @@ export default function Cities() {
   };
 
   const handleDeleteCity = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this city?')) return;
+    if (!confirm('Tem certeza que deseja excluir esta cidade?')) return;
     await deleteCity(id);
     setCities(cities.filter(c => c.id !== id));
-    toast.success('City deleted successfully');
+    toast.success('Cidade excluída com sucesso');
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -54,23 +54,23 @@ export default function Cities() {
     if (editingCity) {
       const updated = await updateCity(editingCity.id, payload);
       setCities(cities.map(c => (c.id === editingCity.id ? { ...c, ...updated } : c)));
-      toast.success('City updated successfully');
+      toast.success('Cidade atualizada com sucesso');
     } else {
       const created = await createCity(payload);
       setCities([created, ...cities]);
-      toast.success('City created successfully');
+      toast.success('Cidade criada com sucesso');
     }
     setIsDialogOpen(false);
   };
 
   const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name' },
-    { key: 'state', label: 'State' },
-    { key: 'created_at', label: 'Created At' },
+    { key: 'name', label: 'Nome' },
+    { key: 'state', label: 'Estado' },
+    { key: 'created_at', label: 'Criado em' },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Ações',
       render: (_: any, row: any) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => handleEditCity(row)}>
@@ -97,32 +97,32 @@ export default function Cities() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Cities Management</h1>
-            <p className="text-muted-foreground mt-1">Create, edit, and delete cities</p>
+            <h1 className="text-3xl font-bold text-foreground">Gerenciamento de Cidades</h1>
+            <p className="text-muted-foreground mt-1">Criar, editar e excluir cidades</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleCreateCity}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add City
+                Adicionar Cidade
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>{editingCity ? 'Edit City' : 'Add City'}</DialogTitle>
+                <DialogTitle>{editingCity ? 'Editar Cidade' : 'Adicionar Cidade'}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" name="name" placeholder="City name" defaultValue={editingCity?.name} required />
+                  <Label htmlFor="name">Nome</Label>
+                  <Input id="name" name="name" placeholder="Nome da cidade" defaultValue={editingCity?.name} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input id="state" name="state" placeholder="State" defaultValue={editingCity?.state} required />
+                  <Label htmlFor="state">Estado</Label>
+                  <Input id="state" name="state" placeholder="Estado" defaultValue={editingCity?.state} required />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit">{editingCity ? 'Update' : 'Create'} City</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                  <Button type="submit">{editingCity ? 'Atualizar' : 'Criar'} Cidade</Button>
                 </div>
               </form>
             </DialogContent>
@@ -133,14 +133,14 @@ export default function Cities() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search cities..."
+            placeholder="Buscar cidades..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
 
-        <DataTable columns={columns} data={filteredCities} emptyMessage="No cities found. Add your first city!" />
+        <DataTable columns={columns} data={filteredCities} emptyMessage="Nenhuma cidade encontrada. Adicione sua primeira cidade!" />
       </div>
     </Layout>
   );

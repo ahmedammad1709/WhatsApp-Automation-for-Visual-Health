@@ -40,13 +40,13 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
-      toast.error('Failed to load settings');
+      toast.error('Falha ao carregar configurações');
     }
   };
 
   const handleSave = async () => {
     if (!prompt.trim()) {
-      toast.error('Prompt cannot be empty');
+      toast.error('O prompt não pode estar vazio');
       return;
     }
 
@@ -60,10 +60,10 @@ export default function Settings() {
           whatsapp_token: whatsappToken
         })
       ]);
-      toast.success('Settings saved successfully');
+      toast.success('Configurações salvas com sucesso');
     } catch (error) {
       console.error('Failed to save settings:', error);
-      toast.error('Failed to save settings');
+      toast.error('Falha ao salvar configurações');
     } finally {
       setLoading(false);
     }
@@ -74,38 +74,38 @@ export default function Settings() {
       <div className="space-y-6 max-w-4xl">
         {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          <h1 className="text-3xl font-bold text-foreground">Configurações</h1>
           <p className="text-muted-foreground mt-1">
-            Configure system settings and integrations
+            Configurar sistema e integrações
           </p>
         </div>
 
         {/* AI Preferences */}
         <Card>
           <CardHeader>
-            <CardTitle>AI Preferences</CardTitle>
+            <CardTitle>Preferências de IA</CardTitle>
             <CardDescription>
-              Configure AI model behavior and style
+              Configurar comportamento e estilo do modelo de IA
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="ai-model">AI Model</Label>
+              <Label htmlFor="ai-model">Modelo de IA</Label>
               <Input
                 id="ai-model"
                 defaultValue="gpt-4-turbo"
                 disabled
               />
               <p className="text-xs text-muted-foreground">
-                Currently using GPT-4 Turbo for optimal performance
+                Usando GPT-4 Turbo para melhor desempenho
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ai-style">Conversation Style</Label>
+              <Label htmlFor="ai-style">Estilo de Conversa</Label>
               <Textarea
                 id="ai-style"
-                placeholder="Define the AI's personality and tone..."
+                placeholder="Defina a personalidade e o tom da IA..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={8}
@@ -113,7 +113,7 @@ export default function Settings() {
             </div>
             <div className="flex justify-end">
               <Button onClick={handleSave} disabled={loading}>
-                {loading ? 'Saving...' : 'Save Settings'}
+                {loading ? 'Salvando...' : 'Salvar Configurações'}
               </Button>
             </div>
           </CardContent>
@@ -122,14 +122,14 @@ export default function Settings() {
         {/* API Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>API Configuration</CardTitle>
+            <CardTitle>Configuração de API</CardTitle>
             <CardDescription>
-              Manage API keys and authentication tokens
+              Gerenciar chaves de API e tokens de autenticação
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="openai-key">OpenAI API Key</Label>
+              <Label htmlFor="openai-key">Chave de API OpenAI</Label>
               <Input
                 id="openai-key"
                 type="password"
@@ -138,12 +138,12 @@ export default function Settings() {
                 onChange={(e) => setOpenaiKey(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Used for AI-powered conversation analysis
+                Usado para análise de conversa com IA
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp-phone-id">WhatsApp Phone Number ID</Label>
+              <Label htmlFor="whatsapp-phone-id">ID do Número de Telefone WhatsApp</Label>
               <Input
                 id="whatsapp-phone-id"
                 placeholder="123456789"
@@ -153,7 +153,7 @@ export default function Settings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp-token">WhatsApp Access Token</Label>
+              <Label htmlFor="whatsapp-token">Token de Acesso WhatsApp</Label>
               <Input
                 id="whatsapp-token"
                 type="password"
@@ -162,7 +162,7 @@ export default function Settings() {
                 onChange={(e) => setWhatsappToken(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Required for sending and receiving WhatsApp messages
+                Necessário para enviar e receber mensagens do WhatsApp
               </p>
             </div>
           </CardContent>
@@ -172,7 +172,7 @@ export default function Settings() {
         {/* Save Button */}
         <div className="flex justify-end">
           <Button size="lg" onClick={handleSave}>
-            Save All Settings
+            Salvar Todas as Configurações
           </Button>
         </div>
       </div>

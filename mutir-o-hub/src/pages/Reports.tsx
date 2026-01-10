@@ -39,7 +39,7 @@ export default function Reports() {
         setCharts(chartsData);
       } catch (error) {
         console.error('Failed to fetch report data:', error);
-        toast.error('Failed to load report data');
+        toast.error('Falha ao carregar dados do relatório');
       } finally {
         setLoading(false);
       }
@@ -53,10 +53,10 @@ export default function Reports() {
       setLoading(true);
       const targetNumber = '5588981033336'; 
       await sendReportToWhatsApp(targetNumber);
-      toast.success(`Report sent to WhatsApp manager (${targetNumber})`);
+      toast.success(`Relatório enviado para o gestor no WhatsApp (${targetNumber})`);
     } catch (error) {
       console.error('Failed to send report:', error);
-      toast.error('Failed to send report to WhatsApp');
+      toast.error('Falha ao enviar relatório para o WhatsApp');
     } finally {
       setLoading(false);
     }
@@ -70,8 +70,8 @@ export default function Reports() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-full">
-          <p>Loading reports...</p>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-muted-foreground">Carregando relatórios...</p>
         </div>
       </Layout>
     );
@@ -83,15 +83,15 @@ export default function Reports() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Reports & Analytics</h1>
+            <h1 className="text-3xl font-bold text-foreground">Relatórios e Análises</h1>
             <p className="text-muted-foreground mt-1">
-              Comprehensive reports and data visualization
+              Relatórios completos e visualização de dados
             </p>
           </div>
           <div className="flex gap-2">
             <Button onClick={handleSendToWhatsApp}>
               <Send className="w-4 h-4 mr-2" />
-              Send to WhatsApp
+              Enviar para WhatsApp
             </Button>
           </div>
         </div>
@@ -129,7 +129,7 @@ export default function Reports() {
           {/* Appointments by City */}
           <Card>
             <CardHeader>
-              <CardTitle>Appointments Distribution (by City)</CardTitle>
+              <CardTitle>Distribuição de Agendamentos (por Cidade)</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
@@ -144,7 +144,7 @@ export default function Reports() {
                       borderRadius: '0.5rem',
                     }}
                   />
-                  <Bar dataKey="appointments" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="appointments" name="Agendamentos" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -153,7 +153,7 @@ export default function Reports() {
           {/* Appointments by Status */}
           <Card>
             <CardHeader>
-              <CardTitle>Appointments by Status</CardTitle>
+              <CardTitle>Agendamentos por Status</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={350}>
@@ -189,7 +189,7 @@ export default function Reports() {
         {/* Daily Performance Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Performance (Last 5 Days)</CardTitle>
+            <CardTitle>Desempenho Recente (Últimos 5 Dias)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -198,15 +198,15 @@ export default function Reports() {
                   <div>
                     <div className="font-medium">{dayData.day} ({new Date(dayData.date).toLocaleDateString()})</div>
                     <div className="text-sm text-muted-foreground">
-                      {dayData.totalAppointments} appointments • {dayData.confirmedAppointments} confirmed
+                      {dayData.totalAppointments} agendamentos • {dayData.confirmedAppointments} confirmados
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-success">
-                      {dayData.conversionRate}% conversion
+                      {dayData.conversionRate}% conversão
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {dayData.remainingCapacity} capacity remaining
+                      {dayData.remainingCapacity} vagas restantes
                     </div>
                   </div>
                 </div>

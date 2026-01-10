@@ -69,14 +69,14 @@ export default function Events() {
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    if (!confirm('Tem certeza que deseja excluir este evento?')) return;
     try {
       await deleteEvent(id);
       setEvents(events.filter(e => e.id !== id));
-      toast.success('Event deleted successfully');
+      toast.success('Evento excluído com sucesso');
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+      toast.error('Falha ao excluir evento');
     }
   };
 
@@ -89,12 +89,12 @@ export default function Events() {
     const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
 
     if (!editingEvent && startDateStr < todayStr) {
-       toast.error('Start date cannot be in the past for new events');
+       toast.error('Data de início não pode ser no passado para novos eventos');
        return;
     }
 
     if (endDateStr < startDateStr) {
-      toast.error('End date cannot be before start date');
+      toast.error('Data de término não pode ser anterior à data de início');
       return;
     }
 
@@ -116,28 +116,28 @@ export default function Events() {
     }
 
     setIsDialogOpen(false);
-    toast.success(editingEvent ? 'Event updated successfully' : 'Event created successfully');
+    toast.success(editingEvent ? 'Evento atualizado com sucesso' : 'Evento criado com sucesso');
   };
 
   const columns = [
     { key: 'id', label: 'ID' },
     {
       key: 'city_id',
-      label: 'City',
+      label: 'Cidade',
       render: (_: any, row: any) => {
         const city = cities.find((c) => c.id === row.city_id);
         return city ? `${city.name}${city.state ? `, ${city.state}` : ''}` : row.city_id;
       },
     },
-    { key: 'location', label: 'Location' },
-    { key: 'start_date', label: 'Start Date', render: (v: any) => formatDate(v) },
-    { key: 'end_date', label: 'End Date', render: (v: any) => formatDate(v) },
-    { key: 'max_capacity', label: 'Max Capacity' },
-    { key: 'notes', label: 'Notes' },
-    { key: 'created_at', label: 'Created At', render: (v: any) => formatDate(v) },
+    { key: 'location', label: 'Local' },
+    { key: 'start_date', label: 'Data de Início', render: (v: any) => formatDate(v) },
+    { key: 'end_date', label: 'Data de Término', render: (v: any) => formatDate(v) },
+    { key: 'max_capacity', label: 'Capacidade Máxima' },
+    { key: 'notes', label: 'Notas' },
+    { key: 'created_at', label: 'Criado em', render: (v: any) => formatDate(v) },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Ações',
       render: (_: any, row: any) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => handleEditEvent(row)}>
@@ -171,43 +171,43 @@ export default function Events() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Events Management</h1>
+            <h1 className="text-3xl font-bold text-foreground">Gerenciamento de Eventos</h1>
             <p className="text-muted-foreground mt-1">
-              Create and manage mutirão health campaign events
+              Criar e gerenciar eventos do mutirão
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleCreateEvent}>
                 <Plus className="w-4 h-4 mr-2" />
-                New Event
+                Novo Evento
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingEvent ? 'Edit Event' : 'Create New Event'}
+                  {editingEvent ? 'Editar Evento' : 'Criar Novo Evento'}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="city_id">City</Label>
+                    <Label htmlFor="city_id">Cidade</Label>
                     <select id="city_id" name="city_id" className="border px-2 py-2 rounded w-full" defaultValue={editingEvent?.city?.id} required>
-                      <option value="">Select a city</option>
+                      <option value="">Selecione uma cidade</option>
                       {cities.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}{c.state ? `, ${c.state}` : ''}</option>
                       ))}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
+                    <Label htmlFor="location">Local</Label>
                     <Input id="location" name="location" placeholder="UBS Centro" defaultValue={editingEvent?.location} required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="start_date">Start Date</Label>
+                    <Label htmlFor="start_date">Data de Início</Label>
                     <Input 
                       id="start_date" 
                       name="start_date" 
@@ -219,7 +219,7 @@ export default function Events() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="end_date">End Date</Label>
+                    <Label htmlFor="end_date">Data de Término</Label>
                     <Input 
                       id="end_date" 
                       name="end_date" 
@@ -231,16 +231,16 @@ export default function Events() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="max_capacity">Max Capacity</Label>
+                  <Label htmlFor="max_capacity">Capacidade Máxima</Label>
                   <Input id="max_capacity" name="max_capacity" type="number" placeholder="50" defaultValue={editingEvent?.max_capacity} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" name="notes" placeholder="Additional information about the event..." defaultValue={editingEvent?.notes} rows={3} />
+                  <Label htmlFor="notes">Notas</Label>
+                  <Textarea id="notes" name="notes" placeholder="Informações adicionais sobre o evento..." defaultValue={editingEvent?.notes} rows={3} />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit">{editingEvent ? 'Update' : 'Create'} Event</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                  <Button type="submit">{editingEvent ? 'Atualizar' : 'Criar'} Evento</Button>
                 </div>
               </form>
             </DialogContent>
@@ -251,7 +251,7 @@ export default function Events() {
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search events..."
+            placeholder="Buscar eventos..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -262,7 +262,7 @@ export default function Events() {
         <DataTable
           columns={columns}
           data={filteredEvents}
-          emptyMessage="No events found."
+          emptyMessage="Nenhum evento encontrado."
         />
       </div>
     </Layout>

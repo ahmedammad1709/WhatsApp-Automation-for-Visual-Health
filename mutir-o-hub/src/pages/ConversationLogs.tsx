@@ -28,10 +28,10 @@ export default function ConversationLogs() {
   };
 
   const columns = [
-    { key: 'patient_phone', label: 'Phone Number' },
+    { key: 'patient_phone', label: 'Telefone' },
     {
       key: 'message_in',
-      label: 'Message In',
+      label: 'Mensagem Recebida',
       render: (text: string) => (
         <div className="max-w-md truncate" title={text}>
           {text || '-'}
@@ -40,7 +40,7 @@ export default function ConversationLogs() {
     },
     {
       key: 'message_out',
-      label: 'Message Out',
+      label: 'Mensagem Enviada',
       render: (text: string) => (
         <div className="max-w-md truncate" title={text}>
           {text || '-'}
@@ -49,7 +49,7 @@ export default function ConversationLogs() {
     },
     {
       key: 'created_at',
-      label: 'Created At',
+      label: 'Data/Hora',
       render: (date: string) => date ? new Date(date).toLocaleString('pt-BR') : '-',
     },
   ];
@@ -68,9 +68,9 @@ export default function ConversationLogs() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Conversation Logs</h1>
+            <h1 className="text-3xl font-bold text-foreground">Histórico de Conversas</h1>
             <p className="text-muted-foreground mt-1">
-              Showing {filteredLogs.length} conversation logs
+              Exibindo {filteredLogs.length} registros de conversa
             </p>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function ConversationLogs() {
             />
           </svg>
           <Input
-            placeholder="Search by phone number..."
+            placeholder="Buscar por número de telefone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -101,12 +101,12 @@ export default function ConversationLogs() {
 
         {/* Conversation Logs Table */}
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading conversation logs...</div>
+          <div className="text-center py-8 text-muted-foreground">Carregando histórico de conversas...</div>
         ) : (
           <DataTable
             columns={columns}
             data={filteredLogs}
-            emptyMessage="No conversation logs found"
+            emptyMessage="Nenhum registro de conversa encontrado"
           />
         )}
       </div>

@@ -46,7 +46,7 @@ export default function Appointments() {
       setAppointments(data);
     } catch (error) {
       console.error('Error loading appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.error('Falha ao carregar agendamentos');
     } finally {
       setLoading(false);
     }
@@ -66,20 +66,20 @@ export default function Appointments() {
     try {
       await updateAppointmentStatus(id, 'completed');
       await loadAppointments();
-      toast.success('Appointment marked as attended');
+      toast.success('Agendamento marcado como realizado');
     } catch (error) {
       console.error('Error updating appointment:', error);
-      toast.error('Failed to update appointment');
+      toast.error('Falha ao atualizar agendamento');
     }
   };
 
   const handleExport = () => {
     if (filteredAppointments.length === 0) {
-      toast.error('No appointments to export');
+      toast.error('Sem agendamentos para exportar');
       return;
     }
 
-    toast.info('Preparing export...');
+    toast.info('Preparando exportação...');
 
     try {
       const exportData = filteredAppointments.map(apt => {
@@ -92,14 +92,14 @@ export default function Appointments() {
         }
 
         return {
-          'Patient Name': apt.patient_name,
-          'Phone': apt.whatsapp_number,
-          'City': apt.city_name,
-          'Neighborhood': apt.neighborhood || '',
-          'Event Location': apt.location,
-          'Date': dateStr,
+          'Nome do Paciente': apt.patient_name,
+          'Telefone': apt.whatsapp_number,
+          'Cidade': apt.city_name,
+          'Bairro': apt.neighborhood || '',
+          'Local do Evento': apt.location,
+          'Data': dateStr,
           'Status': apt.status,
-          'Created At': apt.created_at ? new Date(apt.created_at).toLocaleString('pt-BR') : ''
+          'Criado em': apt.created_at ? new Date(apt.created_at).toLocaleString('pt-BR') : ''
         };
       });
 
@@ -108,10 +108,10 @@ export default function Appointments() {
       XLSX.utils.book_append_sheet(wb, ws, "Appointments");
       
       XLSX.writeFile(wb, `appointments_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast.success('Appointments exported successfully!');
+      toast.success('Agendamentos exportados com sucesso!');
     } catch (error) {
       console.error('Export failed:', error);
-      toast.error('Failed to export appointments');
+      toast.error('Falha ao exportar agendamentos');
     }
   };
 
@@ -122,13 +122,13 @@ export default function Appointments() {
   });
 
   const columns = [
-    { key: 'patient_name', label: 'Patient Name' },
-    { key: 'whatsapp_number', label: 'Phone' },
-    { key: 'city_name', label: 'City' },
-    { key: 'neighborhood', label: 'Neighborhood' },
+    { key: 'patient_name', label: 'Nome do Paciente' },
+    { key: 'whatsapp_number', label: 'Telefone' },
+    { key: 'city_name', label: 'Cidade' },
+    { key: 'neighborhood', label: 'Bairro' },
     {
       key: 'appointment_date',
-      label: 'Date',
+      label: 'Data',
       render: (date: string) => {
         if (!date) return '-';
         const rawDate = typeof date === 'string' ? date : new Date(date).toISOString();
@@ -145,12 +145,17 @@ export default function Appointments() {
           completed: 'outline',
           cancelled: 'destructive',
         };
-        return <Badge variant={variants[status] || 'secondary'}>{status}</Badge>;
+        const statusLabels: any = {
+          scheduled: 'Agendado',
+          completed: 'Concluído',
+          cancelled: 'Cancelado',
+        };
+        return <Badge variant={variants[status] || 'secondary'}>{statusLabels[status] || status}</Badge>;
       },
     },
     {
       key: 'actions',
-      label: 'Actions',
+      label: 'Ações',
       render: (_: any, row: any) => (
         <div className="flex gap-2">
           <Button
@@ -180,14 +185,14 @@ export default function Appointments() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Appointments Queue</h1>
+            <h1 className="text-3xl font-bold text-foreground">Fila de Agendamentos</h1>
             <p className="text-muted-foreground mt-1">
-              Showing {filteredAppointments.length} appointments
+              Mostrando {filteredAppointments.length} agendamentos
             </p>
           </div>
           <Button onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
-            Export to Excel
+            Exportar para Excel
           </Button>
         </div>
 
@@ -196,10 +201,10 @@ export default function Appointments() {
           <Filter className="w-5 h-5 text-muted-foreground" />
           <Select value={filters.city} onValueChange={(v) => setFilters({ ...filters, city: v })}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Cities" />
+              <SelectValue placeholder="Todas as Cidades" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Cities</SelectItem>
+              <SelectItem value="all">Todas as Cidades</SelectItem>
               {cities.map(city => (
                 <SelectItem key={city} value={city}>{city}</SelectItem>
               ))}
@@ -208,25 +213,25 @@ export default function Appointments() {
 
           <Select value={filters.status} onValueChange={(v) => setFilters({ ...filters, status: v })}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Statuses" />
+              <SelectValue placeholder="Todos os Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="scheduled">Agendado</SelectItem>
+              <SelectItem value="completed">Concluído</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Appointments Table */}
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading appointments...</div>
+          <div className="text-center py-8 text-muted-foreground">Carregando agendamentos...</div>
         ) : (
           <DataTable
             columns={columns}
             data={filteredAppointments}
-            emptyMessage="No appointments match the selected filters"
+            emptyMessage="Nenhum agendamento encontrado com os filtros selecionados"
           />
         )}
 
@@ -234,38 +239,38 @@ export default function Appointments() {
         <Sheet open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
           <SheetContent>
             <SheetHeader>
-              <SheetTitle>Appointment Details</SheetTitle>
+              <SheetTitle>Detalhes do Agendamento</SheetTitle>
             </SheetHeader>
             {selectedAppointment && (
               <div className="mt-6 space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Patient</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Paciente</h3>
                   <p className="text-lg font-semibold">{selectedAppointment.patient_name}</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Phone</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Telefone</h3>
                     <p>{selectedAppointment.whatsapp_number}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">City</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Cidade</h3>
                     <p>{selectedAppointment.city_name}</p>
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Neighborhood</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Bairro</h3>
                   <p>{selectedAppointment.neighborhood || '-'}</p>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Location</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Local</h3>
                   <p>{selectedAppointment.location}</p>
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Date</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Data</h3>
                   <p>
                     {selectedAppointment.appointment_date ? (() => {
                       const rawDate = typeof selectedAppointment.appointment_date === 'string' ? selectedAppointment.appointment_date : new Date(selectedAppointment.appointment_date).toISOString();
@@ -281,7 +286,7 @@ export default function Appointments() {
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Created At</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Criado em</h3>
                   <p className="text-sm">{selectedAppointment.created_at ? new Date(selectedAppointment.created_at).toLocaleString('pt-BR') : '-'}</p>
                 </div>
               </div>

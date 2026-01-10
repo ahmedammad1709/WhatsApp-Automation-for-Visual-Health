@@ -24,7 +24,7 @@ interface DataTableProps {
   emptyMessage?: string;
 }
 
-export default function DataTable({ columns, data, emptyMessage = 'No data available' }: DataTableProps) {
+export default function DataTable({ columns, data, emptyMessage = 'Nenhum dado disponível' }: DataTableProps) {
   return (
     <Card className="data-table">
       <Table>
